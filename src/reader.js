@@ -1,9 +1,16 @@
 import fs from 'fs'
 
-export class FileOffsetReader {
+import BufferStream from './buffer-stream'
+
+export class FileReader {
 
     constructor(path){
         this.fd = fs.openSync(path, 'r')
+    }
+
+    get fileSize(){
+        let stat = fs.fstatSync(fd)
+        return stat.size
     }
 
     getByte(offset){
@@ -22,7 +29,8 @@ export class FileOffsetReader {
     }
 
     getStream(offset, length){
-
+        let buffer = this.getBytes(offset, length)
+        return new BufferStream(buffer)
     }
 
 }
