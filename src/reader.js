@@ -1,15 +1,17 @@
 import fs from 'fs'
 
 import BufferStream from './buffer-stream'
-
+/**
+ * Provide implementation on how to retrieve data from source
+ */
 export class FileReader {
 
     constructor(path){
         this.fd = fs.openSync(path, 'r')
     }
 
-    get fileSize(){
-        let stat = fs.fstatSync(fd)
+    get length(){
+        let stat = fs.fstatSync(this.fd)
         return stat.size
     }
 
@@ -28,9 +30,8 @@ export class FileReader {
         return buffer
     }
 
-    getStream(offset, length){
-        let buffer = this.getBytes(offset, length)
-        return new BufferStream(buffer)
+    getStream(offset){
+        return new BufferStream(offset)
     }
 
 }

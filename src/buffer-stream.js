@@ -1,40 +1,43 @@
 
 export class BufferStream {
 
-    constructor(buffer, startPosition = -1){
-        this.buffer = buffer
+    constructor(reader, startPosition = -1, length = -1){
+        this.reader = reader
         this.position = startPosition
-        this.endPosition = this.buffer.length - 1
+        if(length === -1){
+            this.endPosition = this.reader.length - 1
+        }else{
+            this.endPosition = startPosition + length
+        }
         this.startPosition = startPosition
     }
 
-    nextByte(){
-        return this.nextBytes(1)
+    getByte(){
+        return this.getBytes(1)
     }
 
-    nextBytes(length){
+    getBytes(length){
         if(this.position + length > this.endPosition){
-            return null
+            throw new Error('Trying to getBytes() larger then the file size.')
         }
-        let r = this.buffer.slice(this.position + 1, this.position + 1 + length)
+        let r = this.reader.getBytes(this.position + 1, length)
         this.position = this.position + length
         return r
     }
 
     skip(length){
-        if(this.position + length > this.endPosition + 1){
-            this.position = this.endPosition + 1
-        }else{
-            this.position += length
+        if(this.position + length > this.endPosition){
+            throw new Error('Trying to getBytes() larger then the file size.')
         }
+        this.position += length
     }
     
     peekByte(){
-        return Buffer.from([this.buffer[this.position + 1]])
+        // return Buffer.from([this.buffer[this.position + 1]])
     }
 
     peekBytes(length){
-        return Buffer.from(this.buffer.slice(this.position + 1, this.position + length + 1))
+        // return Buffer.from(this.buffer.slice(this.position + 1, this.position + length + 1))
     }
 
     hasNext(){
@@ -43,5 +46,9 @@ export class BufferStream {
     
     reset(){
         this.position = this.startPosition
+    }
+
+    find(needle, limit, backwards){
+        
     }
 }
