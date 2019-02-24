@@ -33,11 +33,15 @@ export class BufferStream {
     }
     
     peekByte(){
-        // return Buffer.from([this.buffer[this.position + 1]])
+        return this.peekBytes(1)
     }
 
     peekBytes(length){
-        // return Buffer.from(this.buffer.slice(this.position + 1, this.position + length + 1))
+        if(this.position + length > this.endPosition){
+            throw new Error('Trying to peekBytes() larger then the file size.')
+        }
+        let r = this.reader.getBytes(this.position + 1, length)
+        return r
     }
 
     hasNext(){

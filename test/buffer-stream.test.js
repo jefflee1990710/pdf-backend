@@ -69,24 +69,24 @@ describe('BufferStream', () => {
     })
     
     describe('#peekByte()', () => {
-        it('should return 0x00 when peek byte from position 0, and position not change', () => {
-            let buffer = Buffer.from([0x00, 0x01, 0x02, 0x03])
-            let bs = new BufferStream(buffer)
-            assert.deepEqual(bs.peekByte(), Buffer.from([0x00]))
+        it('should return 0x25 when peek byte from position 0, and position not change', () => {
+            let reader = new FileReader("./pdf-sample/sample.pdf")
+            let bs = new BufferStream(reader)
+            assert.deepEqual(bs.peekByte(), Buffer.from([0x25]))
             assert.equal(bs.position, -1)
         })
     })
 
     describe('#peekBytes(length)', () => {
         it('should return [0x00, 0x01, 0x02, 0x03] when peek 4 byte from position 0, and position not change', () => {
-            let buffer = Buffer.from([0x00, 0x01, 0x02, 0x03])
-            let bs = new BufferStream(buffer)
-            assert.deepEqual(bs.peekBytes(4), Buffer.from([0x00, 0x01, 0x02, 0x03]))
+            let reader = new FileReader("./pdf-sample/sample.pdf")
+            let bs = new BufferStream(reader)
+            assert.deepEqual(bs.peekBytes(4), Buffer.from([0x25, 0x50, 0x44, 0x46]))
             assert.equal(bs.position, -1)
         })
         it('should return [] when peek 0 byte from position 0, and position not change', () => {
-            let buffer = Buffer.from([0x00, 0x01, 0x02, 0x03])
-            let bs = new BufferStream(buffer)
+            let reader = new FileReader("./pdf-sample/sample.pdf")
+            let bs = new BufferStream(reader)
             assert.deepEqual(bs.peekBytes(0), Buffer.from([]))
             assert.equal(bs.position, -1)
         })
