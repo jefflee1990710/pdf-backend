@@ -1,6 +1,6 @@
 import fs from 'fs'
 
-import BufferStream from './buffer-stream'
+import {BufferStream} from './buffer-stream'
 
 export class Reader {
 
@@ -49,8 +49,8 @@ export class FileReader extends Reader{
         return buffer
     }
 
-    getStream(offset){
-        return new BufferStream(offset)
+    getStream(offset = 0){
+        return new BufferStream(this, offset)
     }
 
 }

@@ -27,7 +27,7 @@ export class BufferStream {
 
     getBytes(length){
         if(this.position + length > this.endPosition){
-            throw new Error('Trying to getBytes() larger then the file size.')
+            throw new Error('Trying to getBytes larger then the file size.')
         }
         let r = this.reader.getBytes(this.position + 1, length)
         this.position = this.position + length
@@ -36,9 +36,16 @@ export class BufferStream {
 
     skip(length){
         if(this.position + length > this.endPosition){
-            throw new Error('Trying to getBytes() larger then the file size.')
+            throw new Error('Trying to skip larger then the file size.')
         }
         this.position += length
+    }
+
+    back(length){
+        if(this.position - length < -1){
+            throw new Error('Trying to back to before the start of file')
+        }
+        this.position -= length
     }
     
     peekByte(){
@@ -68,6 +75,9 @@ export class BufferStream {
         if(endPos > this.endPosition){
             endPos = this.endPosition
         }
+        if(limit === -1){
+            endPos = this.endPosition
+        }
         while(true){
             if(this.position >= endPos){
                 this.position = oldPos
@@ -87,6 +97,9 @@ export class BufferStream {
         this.position = this.endPosition
         let endPos = Math.max(0, this.endPosition - limit)
         // Search backward
+        if(limit === -1){
+            endPos = 0
+        }
         while(true){
             try{
                 if(this.position <= endPos){
