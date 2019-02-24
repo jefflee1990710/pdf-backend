@@ -1,6 +1,15 @@
+import config from 'config'
+
+import {Reader} from './reader'
 
 export class BufferStream {
 
+    /**
+     * 
+     * @param {Reader} reader 
+     * @param {number} startPosition 
+     * @param {number} length 
+     */
     constructor(reader, startPosition = -1, length = -1){
         this.reader = reader
         this.position = startPosition
@@ -52,7 +61,31 @@ export class BufferStream {
         this.position = this.startPosition
     }
 
-    find(needle, limit, backwards){
-        
+    find(needle, limit){
+        let oldPos = this.position
+        let startPos = this.position + 1;
+        let endPos = startPos + limit
+        if(endPos > this.endPosition){
+            endPos = this.endPosition
+        }
+        while(true){
+            if(this.position >= endPos){
+                this.position = oldPos
+                return false
+            }
+            let peeked = this.peekBytes(needle.length)
+            this.position += 1
+            if(peeked.toString(config.get('pdf.encoding')) === needle){
+                return true
+            }
+        }
+    }
+
+    findBackward(needle, limit){
+
+    }
+    
+    subStream(offset, limit){
+
     }
 }

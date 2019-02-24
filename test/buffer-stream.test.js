@@ -94,21 +94,45 @@ describe('BufferStream', () => {
 
     describe('#hasNext()', () => {
         it('should return true if position at 0', () => {
-            let buffer = Buffer.from([0x00, 0x01, 0x02, 0x03])
-            let bs = new BufferStream(buffer)
+            let reader = new FileReader("./pdf-sample/sample.pdf")
+            let bs = new BufferStream(reader)
             assert.equal(bs.hasNext(), true)
         })
         it('should return true if position at 1', () => {
-            let buffer = Buffer.from([0x00, 0x01, 0x02, 0x03])
-            let bs = new BufferStream(buffer)
+            let reader = new FileReader("./pdf-sample/sample.pdf")
+            let bs = new BufferStream(reader)
             bs.skip(1)
             assert.equal(bs.hasNext(), true)
         })
         it('should return false if position at 4', () => {
-            let buffer = Buffer.from([0x00, 0x01, 0x02, 0x03])
-            let bs = new BufferStream(buffer)
-            bs.skip(4)
+            let reader = new FileReader("./pdf-sample/sample.pdf")
+            let bs = new BufferStream(reader)
+            bs.skip(3028)
             assert.equal(bs.hasNext(), false)
+        })
+    })
+
+    describe('#find(needle, limit)', () => {
+        it('should return true and position at 16 for searching "1 0 obj"', () => {
+            let reader = new FileReader("./pdf-sample/sample.pdf")
+            let bs = new BufferStream(reader)
+            let result = bs.find("1 0 obj", 1024)
+            assert.equal(result, true)
+            assert.equal(bs.position, 19)
+        })
+        it('should return false for limit 10 searching "1 0 obj"', () => {
+            let reader = new FileReader("./pdf-sample/sample.pdf")
+            let bs = new BufferStream(reader)
+            let result = bs.find("1 0 obj", 10)
+            assert.equal(result, false)
+            assert.equal(bs.position, -1)
+        })
+        it('should return true and position at 19 for limit 19 and searching "1 0 obj"', () => {
+            let reader = new FileReader("./pdf-sample/sample.pdf")
+            let bs = new BufferStream(reader)
+            let result = bs.find("1 0 obj", 19)
+            assert.equal(result, true)
+            assert.equal(bs.position, 19)
         })
     })
 
