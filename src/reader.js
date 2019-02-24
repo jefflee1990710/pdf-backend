@@ -1,12 +1,31 @@
 import fs from 'fs'
 
 import BufferStream from './buffer-stream'
-/**
- * Provide implementation on how to retrieve data from source
- */
-export class FileReader {
+
+export class Reader {
+
+    get length(){
+        throw new Error('Not Implement')
+    }
+
+    getByte(offset){
+        throw new Error('Not Implement')
+    }
+
+    getBytes(offset, length){
+        throw new Error('Not Implement')
+    }
+
+    getStream(offset){
+        throw new Error('Not Implement')
+    }
+}
+
+export class FileReader extends Reader{
 
     constructor(path){
+        super()
+
         this.fd = fs.openSync(path, 'r')
     }
 
@@ -36,9 +55,11 @@ export class FileReader {
 
 }
 
-export class ByteArrayReader {
+export class ByteArrayReader extends Reader{
 
     constructor(byteArray){
+        super()
+        
         this.byteArray = byteArray
     }
 }
