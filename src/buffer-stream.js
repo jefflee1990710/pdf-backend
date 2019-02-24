@@ -82,7 +82,28 @@ export class BufferStream {
     }
 
     findBackward(needle, limit){
-
+        let oldPos = this.position
+        // Set the pos to the end first
+        this.position = this.endPosition
+        let endPos = Math.max(0, this.endPosition - limit)
+        // Search backward
+        while(true){
+            try{
+                if(this.position <= endPos){
+                    this.position = oldPos
+                    return false
+                }
+                let peeked = this.peekBytes(needle.length)
+                if(peeked.toString(config.get('pdf.encoding')) === needle){
+                    this.position ++
+                    return true
+                }
+                this.position -= 1
+            }catch(e){
+                // Do nothing, normal behaviour for just start the search on backward.
+                this.position -= 1
+            }
+        }
     }
     
     subStream(offset, limit){

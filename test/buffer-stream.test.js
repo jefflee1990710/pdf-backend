@@ -65,6 +65,13 @@ describe('BufferStream', () => {
                 bs.skip(5000)
             })
         })
+        it('should return "1 0 obj"', () => {
+            let reader = new FileReader("./pdf-sample/sample.pdf")
+            let bs = new BufferStream(reader)
+            bs.skip(19) // String offset is 19, offset start from 0, so skip 19
+            let result = bs.getBytes(7)
+            assert.equal(result.toString(), '1 0 obj')
+        })
         
     })
     
@@ -136,8 +143,32 @@ describe('BufferStream', () => {
         })
     })
 
+    describe('#findBackward(needle, limit)', () => {
+        it('should return true and position at 3004 for limit 1024 and searching "trailer" backward', () => {
+            let reader = new FileReader("./pdf-sample/sample.pdf")
+            let bs = new BufferStream(reader)
+            let result = bs.findBackward("trailer", 1024)
+            assert.equal(result, true)
+            assert.equal(bs.position, 2948)
+        })
+        it('should return true and position at -1 (remain unchange) for limit 100 and searching "trailer" backward', () => {
+            let reader = new FileReader("./pdf-sample/sample.pdf")
+            let bs = new BufferStream(reader)
+            let result = bs.findBackward("trailer", 20)
+            assert.equal(result, false)
+            assert.equal(bs.position, -1)
+        })
+    })
+
     describe('#reset()', () => {
-        
+        it('should reset position to -1, which is starting to read (next is 0 offset)', () => {
+            let reader = new FileReader("./pdf-sample/sample.pdf")
+            let bs = new BufferStream(reader)
+            bs.skip(20)
+            assert.equal(bs.position, 19)
+            bs.reset()
+            assert.equal(bs.position, -1)
+        })
     })
 
 })
