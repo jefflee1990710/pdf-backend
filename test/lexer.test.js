@@ -34,4 +34,37 @@ describe('Lexer', () => {
             assert.equal(nextchar, null)
         })
     })
+
+    describe('#getNumber()', () => {
+        it('should return 123', () => {
+            let reader = new ByteArrayReader(Buffer.from("123", pdfEncoding))
+            let lexer = new Lexer(reader.toStream())
+            let numStr = lexer.getNumber()
+            assert.equal(numStr, '123')
+        })
+        it('should return 43445', () => {
+            let reader = new ByteArrayReader(Buffer.from("43445", pdfEncoding))
+            let lexer = new Lexer(reader.toStream())
+            let numStr = lexer.getNumber()
+            assert.equal(numStr, '43445')
+        })
+        it('should return +17', () => {
+            let reader = new ByteArrayReader(Buffer.from("+17", pdfEncoding))
+            let lexer = new Lexer(reader.toStream())
+            let numStr = lexer.getNumber()
+            assert.equal(numStr, '+17')
+        })
+        it('should return -98', () => {
+            let reader = new ByteArrayReader(Buffer.from("-98", pdfEncoding))
+            let lexer = new Lexer(reader.toStream())
+            let numStr = lexer.getNumber()
+            assert.equal(numStr, '-98')
+        })
+        it('should return 0', () => {
+            let reader = new ByteArrayReader(Buffer.from("0", pdfEncoding))
+            let lexer = new Lexer(reader.toStream())
+            let numStr = lexer.getNumber()
+            assert.equal(numStr, '0')
+        })
+    })
 })
