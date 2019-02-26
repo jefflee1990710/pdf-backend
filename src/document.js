@@ -4,6 +4,9 @@ import {
     isNumber, 
     readonly
 } from './helper'
+import {
+    InvalidPDFFormatError
+} from './error'
 import config from 'config'
 
 export class PDFDocument {
@@ -41,10 +44,10 @@ export class PDFDocument {
                 xrefoffset = parseInt(xrefoffset, 10)
                 return readonly(this, "startXRef", xrefoffset);
             }catch(e){
-                throw new Error(`Invalid PDF Format - Error when parsing xRef offset. "${xrefoffset}" is found in the PDF.`)
+                throw new InvalidPDFFormatError(`Invalid PDF Format - Error when parsing xRef offset. "${xrefoffset}" is found in the PDF.`)
             }
         }else{
-            throw new Error('Invalid PDF Format - Keyword "startxref" not found in the PDF file.')
+            throw new InvalidPDFFormatError('Invalid PDF Format - Keyword "startxref" not found in the PDF file.')
         }
     }
 

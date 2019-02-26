@@ -10,6 +10,13 @@ describe('PDFDocument', () => {
             pdfDoc.loadFromFile('./pdf-sample/sample.pdf')
             assert.equal(pdfDoc.startXRef, 2714)
         })
+        it('should throw InvalidPDFFormatError for non-pdf file', () => {
+            let pdfDoc = new PDFDocument()
+            pdfDoc.loadFromFile('./pdf-sample/not-pdf-file.png')
+            assert.throws(() => {
+                pdfDoc.startXRef
+            })
+        })
     })
 
 })
