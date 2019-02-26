@@ -4,8 +4,14 @@ import BufferStream from './buffer-stream'
 import {ReaderOffsetExceedLimitError} from './error'
 
 export class Reader {
-    toStream(offset = 0){
-        return new BufferStream(this, offset)
+    toStream(start = -1, end = -1){
+        if(start != -1){
+            start = start - 1
+        }
+        if(end === -1){
+            end = this.length - 1 - start
+        }
+        return new BufferStream(this)
     }
 }
 
