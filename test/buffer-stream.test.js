@@ -144,12 +144,12 @@ describe('BufferStream', () => {
     })
 
     describe('#findBackward(needle, limit)', () => {
-        it('should return true and position at 3004 for limit 1024 and searching "trailer" backward', () => {
+        it('should return true and position at 2948-1 for limit 1024 and searching "trailer" backward', () => {
             let reader = new FileReader("./pdf-sample/sample.pdf")
             let bs = new BufferStream(reader)
             let result = bs.findBackward("trailer", 1024)
             assert.equal(result, true)
-            assert.equal(bs.position, 2948)
+            assert.equal(bs.position, 2948 - 1) // Will pointer to one byte before for reading purpose.
         })
         it('should return true and position at -1 (remain unchange) for limit 100 and searching "trailer" backward', () => {
             let reader = new FileReader("./pdf-sample/sample.pdf")

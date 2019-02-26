@@ -161,7 +161,7 @@ export default class BufferStream {
                 }
                 let peeked = this.peekBytes(needle.length)
                 if(peeked.toString(config.get('pdf.encoding')) === needle){
-                    this.position ++
+                    // this.position ++
                     return true
                 }
                 this.position -= 1
