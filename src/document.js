@@ -1,5 +1,9 @@
 import {FileReader} from './reader'
-import {isSpace, isNumber} from './helper'
+import {
+    isSpace, 
+    isNumber, 
+    readonly
+} from './helper'
 import config from 'config'
 
 export class PDFDocument {
@@ -13,7 +17,7 @@ export class PDFDocument {
         
     // }
 
-    get startXref(){
+    get startXRef(){
         let startXrefStr = "startxref"
         let found = this.bs.findBackward(startXrefStr, -1)
         if(found){
@@ -33,10 +37,15 @@ export class PDFDocument {
                 char = this.bs.peekByte()
             }
             
-            console.log(xrefoffset)
-
+            try{
+                xrefoffset = parseInt(xrefoffset, 10)
+                return readonly(this, "startXRef", xrefoffset);
+            }catch(e){
+                throw new Error(`Invalid PDF Format - Error when parsing xRef offset. "${xrefoffset}" is found in the PDF.`)
+            }
+        }else{
+            throw new Error('Invalid PDF Format - Keyword "startxref" not found in the PDF file.')
         }
-        return found;
     }
 
 }

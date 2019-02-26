@@ -16,3 +16,12 @@ export function isSpace(byte){
     return (byte === 0x20 || byte === 0x09 || byte === 0x0D || byte === 0x0A);
 }
 
+export function readonly(obj, prop, value){
+    Object.defineProperty(obj, prop, {
+        value : value,
+        enumerable : true,
+        configurable : true,
+        writable : false
+    })
+    return value
+}
