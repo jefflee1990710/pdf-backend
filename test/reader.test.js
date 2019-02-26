@@ -88,4 +88,13 @@ describe('ByteArrayReader', () => {
             assert.deepEqual(buffer, Buffer.from([]))
         })
     })
+
+    describe('#toStream(start, end)', () => {
+        it('should return stream with start 0 and end 4', () => {
+            let reader = new ByteArrayReader([1, 2, 3, 4, 5])
+            let stream = reader.toStream(0, 4)
+            assert.equal(stream.startPosition, -1)
+            assert.equal(stream.endPosition, 4)
+        })
+    })
 })
