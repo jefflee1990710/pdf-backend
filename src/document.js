@@ -16,9 +16,10 @@ export class PDFDocument {
         let startXrefStr = "startxref"
         let found = this.bufferStream.findBackward(startXrefStr, -1)
         if(found){
-            this.bufferStream.skip(startXrefStr.length - 1) // Point to one byte before, so prepare for reading.
+            this.bufferStream.skip(startXrefStr.length) // Point to one byte before, so prepare for reading.
             // Skip next comming space or linebreak
             let char = this.bufferStream.peekByte()
+            console.log(char)
             while(helper.isSpace(char[0])){
                 this.bufferStream.skip(1)
                 char = this.bufferStream.peekByte()
