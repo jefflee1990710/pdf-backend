@@ -1,6 +1,7 @@
 import fs from 'fs'
 
 import BufferStream from './buffer-stream'
+import {ReaderOffsetExceedLimitError} from './error'
 
 export class Reader {
     toStream(offset = 0){
@@ -50,10 +51,16 @@ export class ByteArrayReader extends Reader{
     }
 
     getByte(offset){
-        return Buffer.from(this.byteArray.slice(offset, 1))
+        if(offset > this.length - 1){
+            throw new ReaderOffsetExceedLimitError(`Error when trying read data at offset larger then the source. Data size is ${this.length}, reading at offset ${offset}.`)
+        }
+        return Buffer.from(this.byteArray.slice(offset, offset + 1))
     }
 
     getBytes(offset, length){
-        return Buffer.from(this.byteArray.slice(offset, length))
+        if(offset + length > this.length){
+            throw new ReaderOffsetExceedLimitError(`Error when trying read data at offset larger then the source. Data size is ${this.length}, reading at offset ${offset} and length ${length}.`)
+        }
+        return Buffer.from(this.byteArray.slice(offset, offset + length))
     }
 }
