@@ -1,7 +1,7 @@
 import 'babel-polyfill'
 import assert from 'assert'
 import {FileReader} from '../src/reader'
-import {BufferStream} from '../src/buffer-stream';
+import BufferStream from '../src/buffer-stream';
 
 describe('BufferStream', () => {
 

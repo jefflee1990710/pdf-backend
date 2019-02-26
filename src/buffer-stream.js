@@ -1,6 +1,6 @@
 import config from 'config'
 
-export class BufferStream {
+export default class BufferStream {
 
     /**
      * 

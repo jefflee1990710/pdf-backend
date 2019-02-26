@@ -1,6 +1,6 @@
 import fs from 'fs'
 
-import {BufferStream} from './buffer-stream'
+import BufferStream from './buffer-stream'
 
 export class Reader {
 
