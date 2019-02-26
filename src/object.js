@@ -14,10 +14,11 @@ export class FormattedObject {
     
 }
 
+
 export class Integer extends FormattedObject {
 
     fillBy(bufferStream){
-        let startPos = bufferStream.position
+        bufferStream.savePosition()
 
         this.sign = 1
         let byte = null
@@ -52,7 +53,7 @@ export class Integer extends FormattedObject {
 
         if(baseValArr.length === 0){
             this._filled = false
-            bufferStream.position = startPos;
+            bufferStream.restorePosition()
             return this._filled
         }
 

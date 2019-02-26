@@ -178,5 +178,14 @@ export default class BufferStream {
     rewindPosition(){
         this.position = this.lastPosition
     }
+
+    savePosition(){
+        this.savedPosition = this.position
+    }
+
+    restorePosition(){
+        this.lastPosition = this.position
+        this.position = this.savedPosition
+    }
     
 }

@@ -6,9 +6,9 @@ import config from 'config'
 import BufferStream from "../src/buffer-stream";
 import {Integer} from '../src/object'
 
-describe('Integer', () => {
-    let pdfEncoding = config.get('pdf.encoding')
-    
+let pdfEncoding = config.get('pdf.encoding')
+
+describe('Integer', () => {    
     describe('#fillBy(stream)', () => {
         it("should return 1234", () => {
             let reader = new ByteArrayReader(Buffer.from("1234", pdfEncoding))
