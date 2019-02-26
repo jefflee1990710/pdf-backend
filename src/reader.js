@@ -3,7 +3,9 @@ import fs from 'fs'
 import BufferStream from './buffer-stream'
 
 export class Reader {
-
+    getStream(offset = 0){
+        return new BufferStream(this, offset)
+    }
 }
 
 export class FileReader extends Reader{
@@ -34,10 +36,6 @@ export class FileReader extends Reader{
         return buffer
     }
 
-    getStream(offset = 0){
-        return new BufferStream(this, offset)
-    }
-
 }
 
 export class ByteArrayReader extends Reader{
@@ -46,5 +44,17 @@ export class ByteArrayReader extends Reader{
         super()
         
         this.byteArray = byteArray
+    }
+
+    get length(){
+        return this.byteArray.length
+    }
+
+    getByte(offset){
+        return Buffer.from(this.byteArray.slice(offset, 1))
+    }
+
+    getBytes(offset, length){
+        return Buffer.from(this.byteArray.slice(offset, length))
     }
 }
