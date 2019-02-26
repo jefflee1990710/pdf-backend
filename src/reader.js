@@ -4,21 +4,6 @@ import {BufferStream} from './buffer-stream'
 
 export class Reader {
 
-    get length(){
-        throw new Error('Not Implement')
-    }
-
-    getByte(offset){
-        throw new Error('Not Implement')
-    }
-
-    getBytes(offset, length){
-        throw new Error('Not Implement')
-    }
-
-    getStream(offset){
-        throw new Error('Not Implement')
-    }
 }
 
 export class FileReader extends Reader{
@@ -35,7 +20,7 @@ export class FileReader extends Reader{
     }
 
     getByte(offset){
-        let buffer =  Buffer.alloc(1)
+        let buffer = Buffer.alloc(1)
         let cnt = fs.readSync(this.fd, buffer, 0, buffer.length, offset)
         if(cnt === 0){
             return null

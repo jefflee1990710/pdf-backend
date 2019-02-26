@@ -1,7 +1,5 @@
 import config from 'config'
 
-import {Reader} from './reader'
-
 export class BufferStream {
 
     /**
@@ -119,7 +117,7 @@ export class BufferStream {
         }
     }
     
-    subStream(offset, limit){
+    // subStream(offset, limit){
 
-    }
+    // }
 }

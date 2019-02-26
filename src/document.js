@@ -1,6 +1,5 @@
 import {FileReader} from './reader'
 import {isSpace, isNumber} from './helper'
-import constant from './constant'
 import config from 'config'
 
 export class PDFDocument {
@@ -10,9 +9,9 @@ export class PDFDocument {
         this.bs = this.reader.getStream()
     }
 
-    loadFromWeb(url){
+    // loadFromWeb(url){
         
-    }
+    // }
 
     get startXref(){
         let startXrefStr = "startxref"
@@ -37,6 +36,7 @@ export class PDFDocument {
             console.log(xrefoffset)
 
         }
+        return found;
     }
 
 }
