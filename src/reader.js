@@ -12,7 +12,6 @@ export class FileReader extends Reader{
 
     constructor(path){
         super()
-
         this.fd = fs.openSync(path, 'r')
     }
 
