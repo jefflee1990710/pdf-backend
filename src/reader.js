@@ -3,7 +3,7 @@ import fs from 'fs'
 import BufferStream from './buffer-stream'
 
 export class Reader {
-    getStream(offset = 0){
+    toStream(offset = 0){
         return new BufferStream(this, offset)
     }
 }

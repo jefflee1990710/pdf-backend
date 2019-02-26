@@ -9,7 +9,7 @@ export class PDFDocument {
 
     loadFromFile(path){
         this.reader = new FileReader(path)
-        this.bufferStream = this.reader.getStream()
+        this.bufferStream = this.reader.toStream()
     }
 
     // loadFromWeb(url){
