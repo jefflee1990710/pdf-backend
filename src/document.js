@@ -3,7 +3,6 @@ import helper from './helper'
 import {
     InvalidPDFFormatError
 } from './error'
-import config from 'config'
 import Lexer from './lexer';
 import { Integer } from './object';
 
