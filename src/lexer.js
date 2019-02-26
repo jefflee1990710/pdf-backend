@@ -4,4 +4,12 @@ export default class Lexer {
         this.bufferStream = bufferStream
     }
 
+    nextChar(){
+        return (this.currentChar = this.bufferStream.getByte())
+    }
+
+    peekChar(){
+        return this.bufferStream.peekByte()
+    }
+
 }
