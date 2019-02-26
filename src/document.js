@@ -1,9 +1,5 @@
 import {FileReader} from './reader'
-import {
-    isSpace, 
-    isNumber, 
-    readonly
-} from './helper'
+import helper from './helper'
 import {
     InvalidPDFFormatError
 } from './error'
@@ -27,14 +23,14 @@ export class PDFDocument {
             this.bs.skip(startXrefStr.length - 1) // Point to one byte before, so prepare for reading.
             // Skip next comming space or linebreak
             let char = this.bs.peekByte()
-            while(isSpace(char[0])){
+            while(helper.isSpace(char[0])){
                 this.bs.skip(1)
                 char = this.bs.peekByte()
             }
 
             let xrefoffset = ""
             char = this.bs.peekByte()
-            while(isNumber(char[0])){
+            while(helper.isNumber(char[0])){
                 xrefoffset += (char.toString(config.get('pdf.encoding')))
                 this.bs.skip(1)
                 char = this.bs.peekByte()
@@ -42,7 +38,7 @@ export class PDFDocument {
             
             try{
                 xrefoffset = parseInt(xrefoffset, 10)
-                return readonly(this, "startXRef", xrefoffset);
+                return helper.readonly(this, "startXRef", xrefoffset);
             }catch(e){
                 throw new InvalidPDFFormatError(`Invalid PDF Format - Error when parsing xRef offset. "${xrefoffset}" is found in the PDF.`)
             }
