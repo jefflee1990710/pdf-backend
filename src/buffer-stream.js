@@ -117,7 +117,4 @@ export default class BufferStream {
         }
     }
     
-    // subStream(offset, limit){
-
-    // }
 }

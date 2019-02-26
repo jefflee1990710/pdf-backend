@@ -12,10 +12,6 @@ export class PDFDocument {
         this.bufferStream = this.reader.toStream()
     }
 
-    // loadFromWeb(url){
-        
-    // }
-
     get startXRef(){
         let startXrefStr = "startxref"
         let found = this.bufferStream.findBackward(startXrefStr, -1)
