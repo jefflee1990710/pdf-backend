@@ -17,16 +17,24 @@ export default class BufferStream {
             this.endPosition = startPosition + length
         }
         this.startPosition = startPosition
+        this.lastPosition = this.position
     }
 
     getByte(){
-        return this.getBytes(1)
+        if(!this.hasNext()){
+            return null
+        }
+        return this.getBytes(1)[0]
     }
 
     getBytes(length){
+        if(!this.hasNext()){
+            return null
+        }
         if(this.position + length > this.endPosition){
             throw new Error('Trying to getBytes larger then the file size.')
         }
+        this.lastPosition = this.position
         let r = this.reader.getBytes(this.position + 1, length)
         this.position = this.position + length
         return r
@@ -36,6 +44,7 @@ export default class BufferStream {
         if(this.position + length > this.endPosition){
             throw new Error('Trying to skip larger then the file size.')
         }
+        this.lastPosition = this.position
         this.position += length
     }
 
@@ -43,6 +52,7 @@ export default class BufferStream {
         if(this.position - length < -1){
             throw new Error('Trying to back to before the start of file')
         }
+        this.lastPosition = this.position
         this.position -= length
     }
     
@@ -54,6 +64,7 @@ export default class BufferStream {
         if(this.position + length > this.endPosition){
             throw new Error('Trying to peekBytes() larger then the file size.')
         }
+        this.lastPosition = this.position
         let r = this.reader.getBytes(this.position + 1, length)
         return r
     }
@@ -63,10 +74,12 @@ export default class BufferStream {
     }
     
     reset(){
+        this.lastPosition = this.position
         this.position = this.startPosition
     }
 
     find(needle, limit){
+        this.lastPosition = this.position
         let oldPos = this.position
         let startPos = this.position + 1;
         let endPos = startPos + limit
@@ -90,6 +103,7 @@ export default class BufferStream {
     }
 
     findBackward(needle, limit){
+        this.lastPosition = this.position
         let oldPos = this.position
         // Set the pos to the end first
         this.position = this.endPosition
@@ -115,6 +129,10 @@ export default class BufferStream {
                 this.position -= 1
             }
         }
+    }
+
+    rewindPosition(){
+        this.position = this.lastPosition
     }
     
 }

@@ -13,3 +13,11 @@ export class InvalidPDFFormatError extends Error {
         this.name = "InvalidPDFFormatError"
     }
 }
+
+export class FormattedObjectNotFillError extends Error {
+    constructor(...args){
+        super(...args)
+        Error.captureStackTrace(this, FormattedObjectNotFillError)
+        this.name = "FormattedObjectNotFillError"
+    }
+}
