@@ -1,5 +1,6 @@
 import {FormattedObjectNotFillError} from './error'
 import config from 'config'
+import helper from './helper'
 
 export class FormattedObject {
 
@@ -19,7 +20,11 @@ export class Integer extends FormattedObject {
         let startPos = bufferStream.position
 
         this.sign = 1
-        let byte = bufferStream.getByte()
+        let byte = null
+        do {
+            byte = bufferStream.getByte()
+        }while(helper.isLineBreak(byte) || helper.isTab(byte) || helper.isSpace(byte)) // Skip all space, tab or linebreak before
+
         if(byte === 0x2D){ // - sign
             this.sign = -1
             byte = bufferStream.getByte()
@@ -31,7 +36,7 @@ export class Integer extends FormattedObject {
         let baseValArr = []
         let reachEndOfStream = false
         // Only 0-9 characher is integer.
-        while(byte >= 0x30 && byte <= 0x39 && !reachEndOfStream){ // 0-9
+        while(helper.isNumber(byte) && !reachEndOfStream){ // 0-9
             baseValArr.push(byte)
             byte = bufferStream.getByte()
             if(byte === null){

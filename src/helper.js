@@ -1,19 +1,33 @@
-import constant from './constant'
-
 /**
- * Check if "num" is a number or not
+ * Check if byte is a number or not
  * @param {number} byte 
  */
 const isNumber = (byte) => {
-    return (byte >= constant.NUMBER_RANGE[0] && byte <= constant.NUMBER_RANGE[1])
+    return (byte >= 0x30 && byte <= 0x39) // 0-9
 }
 
 /**
- * Check if byte is space or tab or linebreak or not
+ * Check if byte is space or not
  * @param {number} byte 
  */
 const isSpace = (byte) => {
-    return (byte === 0x20 || byte === 0x09 || byte === 0x0D || byte === 0x0A);
+    return (byte === 0x20);
+}
+
+/**
+ * Check if byte is tab or not
+ * @param {number} byte 
+ */
+const isTab = (byte) => {
+    return (byte === 0x09)
+}
+
+/**
+ * Check if byte is linebreak (CR/LF) or not
+ * @param {number} byte 
+ */
+const isLineBreak = (byte) => {
+    return (byte === 0x0D || byte === 0x0A)
 }
 
 /**
@@ -35,5 +49,7 @@ const readonly = (obj, prop, value) => {
 export default {
     isNumber, 
     isSpace,
+    isTab,
+    isLineBreak,
     readonly
 }

@@ -4,6 +4,8 @@ import {
     InvalidPDFFormatError
 } from './error'
 import config from 'config'
+import Lexer from './lexer';
+import { Integer } from './object';
 
 export class PDFDocument {
 
@@ -18,27 +20,14 @@ export class PDFDocument {
         if(found){
             this.bufferStream.skip(startXrefStr.length) // Point to one byte before, so prepare for reading.
             // Skip next comming space or linebreak
-            let char = this.bufferStream.peekByte()
-            console.log(char)
-            while(helper.isSpace(char[0])){
-                this.bufferStream.skip(1)
-                char = this.bufferStream.peekByte()
-            }
 
-            let xrefoffset = ""
-            char = this.bufferStream.peekByte()
-            while(helper.isNumber(char[0])){
-                xrefoffset += (char.toString(config.get('pdf.encoding')))
-                this.bufferStream.skip(1)
-                char = this.bufferStream.peekByte()
+            let lexer = new Lexer(this.bufferStream) // Create a Lexer for streambuffer parsing
+            let integerObj = lexer.parse(Integer) // Should be pointing at xref offset after find. So lexer will parse coming byte as integer.
+            if(!integerObj){ // If the coming byte can't parse as Integer, maybe PDF file is invalid. <- the offset value is not after "startxref"
+                throw new InvalidPDFFormatError(`Invalid PDF Format - Error when trying to parse expected xrefoffset in PDF file`)
             }
-            
-            try{
-                xrefoffset = parseInt(xrefoffset, 10)
-                return helper.readonly(this, "startXRef", xrefoffset);
-            }catch(e){
-                throw new InvalidPDFFormatError(`Invalid PDF Format - Error when parsing xRef offset. "${xrefoffset}" is found in the PDF.`)
-            }
+            let xrefoffset = integerObj.value
+            return helper.readonly(this, "startXRef", xrefoffset);
         }else{
             throw new InvalidPDFFormatError('Invalid PDF Format - Keyword "startxref" not found in the PDF file.')
         }
