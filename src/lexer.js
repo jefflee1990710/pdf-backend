@@ -5,7 +5,11 @@ export default class Lexer {
     }
 
     nextChar(){
-        return (this.currentChar = this.bufferStream.getByte())
+        try{
+            return (this.currentChar = this.bufferStream.getByte())
+        }catch(err){
+            return null
+        }
     }
 
     peekChar(){
