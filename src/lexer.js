@@ -1,7 +1,9 @@
+import config from 'config'
 import helper from "../src/helper";
 import {
     PDFBoolean,
-    PDFReal
+    PDFReal,
+    PDFCmd
 } from './object'
 
 export default class Lexer {
@@ -11,15 +13,19 @@ export default class Lexer {
     }
 
     savePosition(){
-        this.stream.savePosition()
+        return this.stream.savePosition()
     }
 
-    restorePosition(){
-        this.stream.restorePosition()
+    restorePosition(addr){
+        this.stream.restorePosition(addr)
+    }
+
+    cleanSavedPosition(addr){
+        this.stream.cleanSavedPosition(addr)
     }
     
     nextChar(){
-        return (this.currentChar = this.stream.getByte());
+        return this.stream.getByte()
     }
 
     peekChar(){
@@ -38,50 +44,59 @@ export default class Lexer {
         return null
     }
 
+    getCmd(cmd){
+        let addr = this.savePosition()
+        let ch = this.nextChar()
+
+        let cmdBuf = Buffer.from(cmd, config.get("pdf.encoding"))
+        let cnt = 0
+        while(true){
+            if(cnt > cmdBuf.length - 1){
+                this.cleanSavedPosition(addr)
+                return new PDFCmd(cmd)
+            }
+            if(ch !== cmdBuf[cnt]){
+                this.restorePosition(addr)
+                return null
+            }
+            ch = this.nextChar()
+            cnt ++
+        }
+
+    }
+
     getBoolean(){
-        this.savePosition()
-        let ch = this.currentChar | this.nextChar()
+        let addr = this.savePosition()
+        let ch = this.nextChar()
 
         while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
             ch = this.nextChar()
         }
 
         let choices = [{
-            keyword : 'true'.split(''),
-            value : new PDFBoolean(true),
-            fit : true
+            cmd : 'true',
+            value : new PDFBoolean(true)
         }, {
-            keyword : 'false'.split(''),
-            value : new PDFBoolean(false),
-            fit : true
+            cmd : 'false',
+            value : new PDFBoolean(false)
         }]
-        let limit = Math.max(...choices.map(r => r.keyword.length))
-        let cnt = 0
-        while(true){
-            for(let i in choices){
-                if(choices[i].keyword[cnt] != String.fromCharCode(ch) && cnt < choices[i].keyword.length){
-                    choices[i].fit = false
-                }
-            }
-            cnt ++;
-            ch = this.nextChar()
-            if(cnt > limit){
-                for(let i in choices){
-                    if(choices[i].fit){
-                        return choices[i].value
-                    }
-                }
-                break;
+        
+        for(let c in choices){
+            let choice = choices[c]
+            let found = this.getCmd(choice.cmd)
+            if(found){
+                this.cleanSavedPosition(addr)
+                return choice.value
             }
         }
-        
-        this.restorePosition()
+
+        this.restorePosition(addr)
         return null;
     }
 
     getReal(){
-        this.savePosition()
-        let ch = this.currentChar | this.nextChar()
+        let addr = this.savePosition()
+        let ch = this.nextChar()
 
         let sign = 1
         
@@ -100,7 +115,7 @@ export default class Lexer {
 
         // If next comming byte is not number
         if(!helper.isNumber(ch) && ch !== 0x2E){ // Not number and "."
-            this.restorePosition()
+            this.restorePosition(addr)
             return null;
         }
 
@@ -125,11 +140,13 @@ export default class Lexer {
                     head = head.map(r => String.fromCharCode(r))
                     tail = tail.map(r => String.fromCharCode(r))
                     let baseVal = `${head.join('')}.${tail.length > 0 ? tail.join('') : '0'}`
+                    this.cleanSavedPosition(addr)
                     return new PDFReal(sign * parseFloat(baseVal));
                 } else if(tail.length > 0){
                     head = head.map(r => String.fromCharCode(r))
                     tail = tail.map(r => String.fromCharCode(r))
                     let baseVal = `0.${tail.join('')}`
+                    this.cleanSavedPosition(addr)
                     return new PDFReal(sign * parseFloat(baseVal));
                 }
             }

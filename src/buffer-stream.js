@@ -1,5 +1,5 @@
 import config from 'config'
-
+import uuidv4 from 'uuid/v4'
 /**
  * BufferStream hold a pointer start from -1 or given starting position.
  * Byte will be feed one by one to Lexer to construct PDF Object.
@@ -21,6 +21,7 @@ export default class BufferStream {
         }
         this.startPosition = startPosition
         this.lastPosition = this.position
+        this.savedPosition = {}
     }
 
     /**
@@ -145,12 +146,20 @@ export default class BufferStream {
     }
 
     savePosition(){
-        this.savedPosition = this.position
+        let addr = uuidv4()
+        this.savedPosition[addr] = this.position
+        return addr
     }
 
-    restorePosition(){
+    restorePosition(addr){
         this.lastPosition = this.position
-        this.position = this.savedPosition
+        this.savedPosition[addr] = null
+        this.position = this.savedPosition[addr]
+    }
+
+    cleanSavedPosition(addr){
+        this.savedPosition[addr] = null
+        delete this.savedPosition[addr]
     }
 
 

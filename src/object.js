@@ -11,3 +11,10 @@ export class PDFReal {
         this.val = val
     }
 }
+
+export class PDFCmd {
+
+    constructor(val){
+        this.val = val
+    }
+}
