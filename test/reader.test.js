@@ -8,7 +8,7 @@ describe('FileOffsetReader', () => {
     describe('#getByte(offset)', () => {
         it('should return "P" for offset 1 in sample.pdf', () => {
             let reader = new FileReader("./pdf-sample/sample.pdf")
-            let r = reader.getByte(1).toString(config.get('pdf.encoding'))
+            let r = Buffer.from([reader.getByte(1)]).toString(config.get('pdf.encoding'))
             assert.equal(r, 'P')
         })
         it('should return null for reading after end of file', () => {
@@ -30,13 +30,13 @@ describe('ByteArrayReader', () => {
     describe('#getByte(offset)', () => {
         it('should return 0x0B for offset 1 in byte array', () => {
             let reader = new ByteArrayReader([1, 2, 3, 4, 5])
-            let buffer = reader.getByte(1)
-            assert.equal(buffer[0], 2)
+            let byte = reader.getByte(1)
+            assert.equal(byte, 2)
         })
         it('should return 5 for reading at offset 4', () => {
             let reader = new ByteArrayReader([1, 2, 3, 4, 5])
-            let buffer = reader.getByte(4)
-            assert.equal(buffer[0], 5)
+            let byte = reader.getByte(4)
+            assert.equal(byte, 5)
         })
         it('should throw ReaderOffsetExceedLimitError for reading at offset 5', () => {
             let reader = new ByteArrayReader([1, 2, 3, 4, 5])
@@ -93,7 +93,7 @@ describe('ByteArrayReader', () => {
         it('should return stream with start 0 and end 4', () => {
             let reader = new ByteArrayReader([1, 2, 3, 4, 5])
             let stream = reader.toStream(0, 4)
-            assert.equal(stream.startPosition, -1)
+            assert.equal(stream.startPosition, 0)
             assert.equal(stream.endPosition, 4)
         })
     })

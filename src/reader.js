@@ -33,7 +33,7 @@ export class FileReader extends Reader{
         if(cnt === 0){
             return null
         }
-        return buffer
+        return buffer[0]
     }
 
     getBytes(offset, length){
@@ -60,7 +60,7 @@ export class ByteArrayReader extends Reader{
         if(offset > this.length - 1){
             throw new ReaderOffsetExceedLimitError(`Error when trying read data at offset larger then the source. Data size is ${this.length}, reading at offset ${offset}.`)
         }
-        return Buffer.from(this.byteArray.slice(offset, offset + 1))
+        return Buffer.from(this.byteArray.slice(offset, offset + 1))[0]
     }
 
     getBytes(offset, length){

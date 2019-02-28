@@ -11,7 +11,7 @@ export default class BufferStream {
      * @param {number} startPosition 
      * @param {number} length 
      */
-    constructor(reader, startPosition = -1, length = -1){
+    constructor(reader, startPosition = 0, length = -1){
         this.reader = reader
         this.position = startPosition
         if(length === -1){
@@ -30,75 +30,40 @@ export default class BufferStream {
         if(!this.hasNext()){
             return null
         }
-        return this.getBytes(1)[0]
+        this.lastPosition = this.position
+        return this.reader.getByte(this.position ++)
     }
 
-    /**
-     * Retrieve a number of bytes
-     * @param {number} length 
-     */
-    getBytes(length){
+    skip(length = 0){
         if(!this.hasNext()){
             return null
         }
-        if(this.position + length > this.endPosition){
-            throw new Error('Trying to getBytes larger then the file size.')
-        }
-        this.lastPosition = this.position
-        let r = this.reader.getBytes(this.position + 1, length)
-        this.position = this.position + length
-        return r
-    }
-
-    /**
-     * Skip a number of bytes
-     * @param {number} length 
-     */
-    skip(length){
-        if(this.position + length > this.endPosition){
-            throw new Error('Trying to skip larger then the file size.')
-        }
         this.lastPosition = this.position
         this.position += length
-    }
-
-    /**
-     * Shift the pointer back to a certain length
-     * @param {number} length 
-     */
-    back(length){
-        if(this.position - length < -1){
-            throw new Error('Trying to back to before the start of file')
-        }
-        this.lastPosition = this.position
-        this.position -= length
     }
     
     /**
      * Peek a byte forward and don't change the pointer position
      */
     peekByte(){
-        return this.peekBytes(1)
+        if(!this.hasNext()){
+            return null
+        }
+        return this.reader.getByte(this.position)
     }
 
-    /**
-     * Peek a number of bytes forward and don't change the pointer position
-     * @param {number} length 
-     */
     peekBytes(length){
-        if(this.position + length > this.endPosition){
-            throw new Error('Trying to peekBytes() larger then the file size.')
+        if(!this.hasNext()){
+            return null
         }
-        this.lastPosition = this.position
-        let r = this.reader.getBytes(this.position + 1, length)
-        return r
+        return this.reader.getBytes(this.position, length)
     }
 
     /**
      * Check if the pointer already at the end of the stream
      */
     hasNext(){
-        return this.position < this.endPosition
+        return this.position <= this.endPosition
     }
     
     /**
@@ -118,7 +83,7 @@ export default class BufferStream {
         this.lastPosition = this.position
         let oldPos = this.position
         let startPos = this.position + 1;
-        let endPos = startPos + limit
+        let endPos = startPos + limit - 1
         if(endPos > this.endPosition){
             endPos = this.endPosition
         }
@@ -131,10 +96,10 @@ export default class BufferStream {
                 return false
             }
             let peeked = this.peekBytes(needle.length)
-            this.position += 1
             if(peeked.toString(config.get('pdf.encoding')) === needle){
                 return true
             }
+            this.position += 1
         }
     }
 
@@ -148,7 +113,7 @@ export default class BufferStream {
         let oldPos = this.position
         // Set the pos to the end first
         this.position = this.endPosition
-        let endPos = Math.max(0, this.endPosition - limit)
+        let endPos = Math.max(0, this.endPosition - (limit - 1))
         // Search backward
         if(limit === -1){
             endPos = 0
@@ -187,5 +152,7 @@ export default class BufferStream {
         this.lastPosition = this.position
         this.position = this.savedPosition
     }
+
+
     
 }

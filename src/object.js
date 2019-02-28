@@ -14,6 +14,58 @@ export class FormattedObject {
     
 }
 
+export class Command extends FormattedObject {
+
+    constructor(command){
+        super()
+        this.command = command
+    }
+ 
+    fillBy(bufferStream){
+        bufferStream.savePosition()
+
+        let byte;
+        let cmd = Buffer.from(this.command, config.get("pdf.encoding"))
+        let cnt = 0
+        while(true){
+            if(cnt > cmd.length - 1){
+                bufferStream.rewindPosition()
+                this._value = this.command
+                return (this._filled = true)
+            }
+            if(byte !== cmd[cnt]){
+                bufferStream.restorePosition()
+                return (this._filled = false)
+            }
+            byte = bufferStream.getByte()
+            cnt ++
+        }
+    }
+}
+
+export class XRef extends FormattedObject {
+
+    fillBy(bufferStream){
+        bufferStream.savePosition()
+        
+        let byte;
+        do{
+            byte = bufferStream.getByte()
+        }while(helper.isLineBreak(byte) || helper.isTab(byte) || helper.isSpace(byte))
+
+        let cmd = new Command("xref")
+        let cmdFound = cmd.fillBy(bufferStream)
+
+        if(!cmdFound){
+            bufferStream.restorePosition()
+            return (this._filled = false)
+        }
+
+        this._value = 123
+        return (this._filled = true)
+
+    }
+}
 
 export class Integer extends FormattedObject {
 
@@ -35,32 +87,28 @@ export class Integer extends FormattedObject {
         }
         
         let baseValArr = []
-        let reachEndOfStream = false
         // Only 0-9 characher is integer.
-        while(helper.isNumber(byte) && !reachEndOfStream){ // 0-9
-            baseValArr.push(byte)
+        while(true){ 
+            if(helper.isNumber(byte)){ // 0-9
+                baseValArr.push(byte)
+            }else{
+                bufferStream.rewindPosition()
+                break;
+            }
             byte = bufferStream.getByte()
             if(byte === null){
-                reachEndOfStream = true
+                break
             }
         }
-        // Rewind one step backward for the position.
-        // Because the filling process end by not integer character, so this consumed byte belong to next object.
-        // Rewind it so the next filling is abe to read it.
-        if(!reachEndOfStream){
-            bufferStream.rewindPosition()
-        }
-
+        
         if(baseValArr.length === 0){
-            this._filled = false
             bufferStream.restorePosition()
-            return this._filled
+            return (this._filled = false)
         }
 
         let baseVal = Buffer.from(baseValArr).toString(config.get('pdf.encoding'))
-        this._filled = true
         this._value = this.sign * parseInt(baseVal)
-        return this._filled
+        return (this._filled = true)
     }
 
 }
