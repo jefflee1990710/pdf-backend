@@ -25,12 +25,12 @@ export default class Lexer {
 
     getInteger(){
         this.savePosition()
-
         let ch = this.currentChar | this.nextChar()
-        let sign = 1
 
+        let sign = 1
+        
         while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
-            this.nextChar()
+            ch = this.nextChar()
         }
 
         if(ch === 0x2D){ // - sign
