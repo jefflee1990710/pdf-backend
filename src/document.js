@@ -17,7 +17,7 @@ export class PDFDocument {
             let lexer = new Lexer(this.bufferStream)
             let startxrefoffset = lexer.getInteger(lexer)
             if(startxrefoffset){
-                return startxrefoffset
+                return startxrefoffset.val
             }else{
                 throw new InvalidPDFFormatError(`Invalid PDF Format - Error when trying to parse expected xrefoffset in PDF file`)
             }

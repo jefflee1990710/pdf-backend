@@ -45,17 +45,76 @@ describe('Lexer', () => {
         })
     })
 
+    describe('#getBoolean', () => {
+        it('can read true from stream', () => {
+            let reader = new ByteArrayReader(Buffer.from('true', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let {val} = lexer.getBoolean()
+            expect(val).equal(true);
+        })
+        it('can read false from stream', () => {
+            let reader = new ByteArrayReader(Buffer.from('false', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let {val} = lexer.getBoolean()
+            expect(val).equal(false);
+        })
+    })
+
     describe('#getInteger', () => {
-        it('can read PostScript syntax for number', () => {
+        it('can read PostScript syntax for integer', () => {
             let numbers = ['123', '43445', '+17', '-98', '0'];
             for (var i = 0; i < numbers.length; i++) {
                 let num = numbers[i];
                 let reader = new ByteArrayReader(Buffer.from(num, pdfEncoding))
                 let stream = new BufferStream(reader)
                 let lexer = new Lexer(stream)
-                let result = lexer.getInteger()
-                expect(result).equal(parseFloat(num));
+                let {val} = lexer.getInteger()
+                expect(val).equal(parseInt(num));
             }
+        })
+    })
+
+    describe('#getReal', () => {
+        it('can read PostScript script for real', () => {
+            let numbers = ['123', '43445', '+17', '-98', '0'];
+            for (var i = 0; i < numbers.length; i++) {
+                let num = numbers[i];
+                let reader = new ByteArrayReader(Buffer.from(num, pdfEncoding))
+                let stream = new BufferStream(reader)
+                let lexer = new Lexer(stream)
+                let {val} = lexer.getReal()
+                expect(val).equal(parseFloat(num));
+            }
+        })
+    })
+
+    describe('#getObj', () => {
+        it('can read PostScript syntax for integer or boolean', () => {
+            let numbers = ['123', '43445', '+17', '-98', '0'];
+            for (var i = 0; i < numbers.length; i++) {
+                let num = numbers[i];
+                let reader = new ByteArrayReader(Buffer.from(num, pdfEncoding))
+                let stream = new BufferStream(reader)
+                let lexer = new Lexer(stream)
+                let {val} = lexer.getObj()
+                expect(val).equal(parseInt(num));
+            }
+        })
+        it('can read true from stream', () => {
+            let reader = new ByteArrayReader(Buffer.from('true', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let {val} = lexer.getObj()
+            expect(val).equal(true);
+        })
+        it('can read false from stream', () => {
+            let reader = new ByteArrayReader(Buffer.from('false', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let {val} = lexer.getObj()
+            expect(val).equal(false);
         })
     })
 
