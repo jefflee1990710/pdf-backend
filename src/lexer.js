@@ -1,8 +1,6 @@
 import helper from "../src/helper";
-import config from 'config'
 import {
     PDFBoolean,
-    PDFInteger,
     PDFReal
 } from './object'
 
@@ -29,7 +27,7 @@ export default class Lexer {
     }
 
     getObj(){
-        let fnl = [this.getBoolean, this.getInteger, this.getReal]
+        let fnl = [this.getBoolean, this.getReal]
         for(let i in fnl){
             let fn = fnl[i]
             let value = fn.apply(this)
@@ -79,50 +77,6 @@ export default class Lexer {
         
         this.restorePosition()
         return null;
-    }
-
-    /**
-     * Read until next byte is not number
-     */
-    getInteger(){
-        this.savePosition()
-        let ch = this.currentChar | this.nextChar()
-
-        let sign = 1
-        
-        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
-            ch = this.nextChar()
-        }
-
-        if(ch === 0x2D){ // - sign
-            sign = -1
-            ch = this.nextChar()
-        }else if(ch === 0x2B){ // + sign
-            sign = 1
-            ch = this.nextChar()
-        }
-        sign = sign | 1
-
-        let baseValArr = []
-        while(true){
-            if(helper.isNumber(ch)){
-                baseValArr.push(ch)
-            }else{
-                break
-            }
-            ch = this.nextChar()
-            if(ch === null){
-                break
-            }
-        }
-
-        if(baseValArr.length === 0){
-            this.restorePosition()
-            return null;
-        }
-
-        let baseVal = Buffer.from(baseValArr, config.get('pdf.encoding'))
-        return new PDFInteger(sign * parseInt(baseVal))
     }
 
     getReal(){

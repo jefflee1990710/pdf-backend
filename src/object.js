@@ -5,14 +5,6 @@ export class PDFBoolean {
     }
 }
 
-export class PDFInteger {
-
-    constructor(val){
-        this.val = val
-    }
-
-}
-
 export class PDFReal {
 
     constructor(val){
