@@ -158,6 +158,31 @@ describe('Lexer', () => {
         })
     })
 
+    describe('#getHexadecimalString()', () => {
+        it('can read paired hexdecimal string', () => {
+            let reader = new ByteArrayReader(Buffer.from("<A3F234C4DEA0>", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getHexadecimalString()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFHexadecimalString")
+            expect(val).equal("A3F234C4DEA0");
+        })
+        it('can read hexdecimal string missing last zero', () => {
+            let reader = new ByteArrayReader(Buffer.from("<A3F234C4DEA>", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getHexadecimalString()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFHexadecimalString")
+            expect(val).equal("A3F234C4DEA0");
+        })
+    })
+
+    describe('#getName()', () => {
+        
+    })
+
     describe('#getObj', () => {
         it('can read PostScript syntax for integer or boolean', () => {
             let numbers = ['123', '43445', '+17', '-98', '0'];
@@ -254,6 +279,24 @@ describe('Lexer', () => {
             let {val} = pdfObj
             expect(pdfObj.constructor.name).equal("PDFLiteralString")
             expect(val).equal("");
+        })
+        it('can read paired hexdecimal string', () => {
+            let reader = new ByteArrayReader(Buffer.from("<A3F234C4DEA0>", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getHexadecimalString()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFHexadecimalString")
+            expect(val).equal("A3F234C4DEA0");
+        })
+        it('can read hexdecimal string missing last zero', () => {
+            let reader = new ByteArrayReader(Buffer.from("<A3F234C4DEA>", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getHexadecimalString()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFHexadecimalString")
+            expect(val).equal("A3F234C4DEA0");
         })
     })
 

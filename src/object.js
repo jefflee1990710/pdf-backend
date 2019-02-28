@@ -32,3 +32,10 @@ export class PDFLiteralString {
         this.val = val
     }
 }
+
+export class PDFHexadecimalString {
+
+    constructor(val){
+        this.val = val
+    }
+}

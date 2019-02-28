@@ -5,7 +5,8 @@ import {
     PDFReal,
     PDFCmd,
     PDFString,
-    PDFLiteralString
+    PDFLiteralString,
+    PDFHexadecimalString
 } from './object'
 
 export default class Lexer {
@@ -35,7 +36,12 @@ export default class Lexer {
     }
 
     getObj(){
-        let fnl = [this.getBoolean, this.getReal, this.getLiteralString]
+        let fnl = [
+            this.getBoolean, 
+            this.getReal, 
+            this.getLiteralString,
+            this.getHexadecimalString
+        ]
         for(let i in fnl){
             let fn = fnl[i]
             let value = fn.apply(this)
@@ -190,6 +196,21 @@ export default class Lexer {
         let pdfObj = this.getStringObject(prevCh, "(", ")")
         if(pdfObj){
             return new PDFLiteralString(pdfObj.val)
+        }else{
+            return null
+        }
+    }
+
+    getHexadecimalString(prevCh){
+        let pdfObj = this.getStringObject(prevCh, "<", ">")
+        if(pdfObj){
+            let str;
+            if(pdfObj.val.length % 2 != 0){
+                str = pdfObj.val + "0"
+            }else{
+                str = pdfObj.val
+            }
+            return new PDFHexadecimalString(str)
         }else{
             return null
         }
