@@ -119,6 +119,45 @@ describe('Lexer', () => {
         })
     })
 
+    describe('#getliteralString', () => {
+        it('can read single parenthsis string', () => {
+            let reader = new ByteArrayReader(Buffer.from("(This is a string)", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getLiteralString()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFLiteralString")
+            expect(val).equal("This is a string");
+        })
+        it('can read string contain new line', () => {
+            let reader = new ByteArrayReader(Buffer.from("(This is a string \n with new line)", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getLiteralString()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFLiteralString")
+            expect(val).equal("This is a string \n with new line");
+        })
+        it('can read string with balanced parentheses', () => {
+            let reader = new ByteArrayReader(Buffer.from("(This is a string (with balanced parentheses) no problem)", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getLiteralString()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFLiteralString")
+            expect(val).equal("This is a string (with balanced parentheses) no problem");
+        })
+        it('can read string with 0 length', () => {
+            let reader = new ByteArrayReader(Buffer.from("()", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getLiteralString()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFLiteralString")
+            expect(val).equal("");
+        })
+    })
+
     describe('#getObj', () => {
         it('can read PostScript syntax for integer or boolean', () => {
             let numbers = ['123', '43445', '+17', '-98', '0'];
@@ -180,14 +219,11 @@ describe('Lexer', () => {
                 expect(val).equal(parseFloat(num));
             }
         })
-    })
-
-    describe('#getliteralString', () => {
         it('can read single parenthsis string', () => {
             let reader = new ByteArrayReader(Buffer.from("(This is a string)", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
-            let pdfObj = lexer.getLiteralString()
+            let pdfObj = lexer.getObj()
             let {val} = pdfObj
             expect(pdfObj.constructor.name).equal("PDFLiteralString")
             expect(val).equal("This is a string");
@@ -196,7 +232,7 @@ describe('Lexer', () => {
             let reader = new ByteArrayReader(Buffer.from("(This is a string \n with new line)", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
-            let pdfObj = lexer.getLiteralString()
+            let pdfObj = lexer.getObj()
             let {val} = pdfObj
             expect(pdfObj.constructor.name).equal("PDFLiteralString")
             expect(val).equal("This is a string \n with new line");
@@ -205,7 +241,7 @@ describe('Lexer', () => {
             let reader = new ByteArrayReader(Buffer.from("(This is a string (with balanced parentheses) no problem)", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
-            let pdfObj = lexer.getLiteralString()
+            let pdfObj = lexer.getObj()
             let {val} = pdfObj
             expect(pdfObj.constructor.name).equal("PDFLiteralString")
             expect(val).equal("This is a string (with balanced parentheses) no problem");
@@ -214,11 +250,12 @@ describe('Lexer', () => {
             let reader = new ByteArrayReader(Buffer.from("()", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
-            let pdfObj = lexer.getLiteralString()
+            let pdfObj = lexer.getObj()
             let {val} = pdfObj
             expect(pdfObj.constructor.name).equal("PDFLiteralString")
             expect(val).equal("");
         })
     })
+
 
 })

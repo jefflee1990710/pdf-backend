@@ -35,7 +35,7 @@ export default class Lexer {
     }
 
     getObj(){
-        let fnl = [this.getBoolean, this.getReal]
+        let fnl = [this.getBoolean, this.getReal, this.getLiteralString]
         for(let i in fnl){
             let fn = fnl[i]
             let value = fn.apply(this)
@@ -194,4 +194,5 @@ export default class Lexer {
             return null
         }
     }
+
 }
