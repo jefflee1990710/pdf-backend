@@ -1,19 +1,67 @@
+import helper from "../src/helper";
+import config from 'config'
+
 export default class Lexer {
 
     constructor(bufferStream){
-        this.bufferStream = bufferStream
+        this.stream = bufferStream
     }
 
-    parse(...objClazzes){
-        for(let i = 0 ; i < objClazzes.length; i ++){
-            let Clazz = objClazzes[i]
-            let pdfObject = new Clazz()
-            let parseSuccess = pdfObject.fillBy(this.bufferStream)
-            if(parseSuccess){
-                return pdfObject
+    savePosition(){
+        this.stream.savePosition()
+    }
+
+    restorePosition(){
+        this.stream.restorePosition()
+    }
+    
+    nextChar(){
+        return (this.currentChar = this.stream.getByte());
+    }
+
+    peekChar(){
+        return this.stream.peekByte();
+    }
+
+    getInteger(){
+        this.savePosition()
+
+        let ch = this.currentChar | this.nextChar()
+        let sign = 1
+
+        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
+            this.nextChar()
+        }
+
+        if(ch === 0x2D){ // - sign
+            sign = -1
+            ch = this.nextChar()
+        }else if(ch === 0x2B){ // + sign
+            sign = 1
+            ch = this.nextChar()
+        }
+        sign = sign | 1
+
+        let baseValArr = []
+        while(true){
+            if(helper.isNumber(ch)){
+                baseValArr.push(ch)
+            }else{
+                break
+            }
+            ch = this.nextChar()
+            if(ch === null){
+                break
             }
         }
-        return null
+
+        if(baseValArr.length === 0){
+            this.restorePosition()
+            return null;
+        }
+
+        let baseVal = Buffer.from(baseValArr, config.get('pdf.encoding'))
+        return sign * parseInt(baseVal)
     }
 
 }
