@@ -21,3 +21,11 @@ export class FormattedObjectNotFillError extends Error {
         this.name = "FormattedObjectNotFillError"
     }
 }
+
+export class RestorePositionError extends Error {
+    constructor(...args){
+        super(...args)
+        Error.captureStackTrace(this, RestorePositionError)
+        this.name = "RestorePositionError"
+    }
+}

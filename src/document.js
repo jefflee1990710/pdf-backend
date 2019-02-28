@@ -15,7 +15,7 @@ export class PDFDocument {
         if(found){
             this.bufferStream.skip(startXrefStr.length)
             let lexer = new Lexer(this.bufferStream)
-            let startxrefoffset = lexer.getReal(lexer)
+            let startxrefoffset = lexer.getReal()
             if(startxrefoffset){
                 return startxrefoffset.val
             }else{

@@ -1,5 +1,8 @@
 import config from 'config'
 import uuidv4 from 'uuid/v4'
+import {RestorePositionError} from './error'
+
+
 /**
  * BufferStream hold a pointer start from -1 or given starting position.
  * Byte will be feed one by one to Lexer to construct PDF Object.
@@ -153,13 +156,15 @@ export default class BufferStream {
 
     restorePosition(addr){
         this.lastPosition = this.position
-        this.savedPosition[addr] = null
+        if(!this.savedPosition[addr] && this.savedPosition[addr] != 0){
+            throw new RestorePositionError("Position not found in address : " + addr)
+        }
         this.position = this.savedPosition[addr]
+        this.savedPosition[addr] = null
     }
 
     cleanSavedPosition(addr){
         this.savedPosition[addr] = null
-        delete this.savedPosition[addr]
     }
 
 

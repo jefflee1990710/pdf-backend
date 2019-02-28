@@ -18,3 +18,17 @@ export class PDFCmd {
         this.val = val
     }
 }
+
+export class PDFString {
+
+    constructor(val){
+        this.val = val
+    }
+}
+
+export class PDFLiteralString {
+
+    constructor(val){
+        this.val = val
+    }
+}

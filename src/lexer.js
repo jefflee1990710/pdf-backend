@@ -3,7 +3,9 @@ import helper from "../src/helper";
 import {
     PDFBoolean,
     PDFReal,
-    PDFCmd
+    PDFCmd,
+    PDFString,
+    PDFLiteralString
 } from './object'
 
 export default class Lexer {
@@ -44,14 +46,14 @@ export default class Lexer {
         return null
     }
 
-    getCmd(cmd){
+    getCmd(prevCh, cmd){
         let addr = this.savePosition()
-        let ch = this.nextChar()
+        let ch = prevCh || this.nextChar()
 
         let cmdBuf = Buffer.from(cmd, config.get("pdf.encoding"))
         let cnt = 0
         while(true){
-            if(cnt > cmdBuf.length - 1){
+            if(cnt >= cmdBuf.length - 1){
                 this.cleanSavedPosition(addr)
                 return new PDFCmd(cmd)
             }
@@ -65,10 +67,9 @@ export default class Lexer {
 
     }
 
-    getBoolean(){
+    getBoolean(prevCh){
         let addr = this.savePosition()
-        let ch = this.nextChar()
-
+        let ch = prevCh || this.nextChar()
         while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
             ch = this.nextChar()
         }
@@ -83,7 +84,7 @@ export default class Lexer {
         
         for(let c in choices){
             let choice = choices[c]
-            let found = this.getCmd(choice.cmd)
+            let found = this.getCmd(ch, choice.cmd)
             if(found){
                 this.cleanSavedPosition(addr)
                 return choice.value
@@ -94,9 +95,9 @@ export default class Lexer {
         return null;
     }
 
-    getReal(){
+    getReal(prevCh){
         let addr = this.savePosition()
-        let ch = this.nextChar()
+        let ch = prevCh || this.nextChar()
 
         let sign = 1
         
@@ -155,4 +156,42 @@ export default class Lexer {
         }
     }
 
+    getStringObject(prevCh, startBy, closeBy){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        let openingCmd = this.getCmd(ch, startBy)
+        if(!openingCmd){
+            this.restorePosition(addr)
+            return null
+        }
+        
+        let stringBuffer = []
+        let parenCnt = 0;
+
+        while(true){
+            ch = this.nextChar()
+            if(String.fromCharCode(ch) === closeBy && parenCnt === 0){
+                this.cleanSavedPosition(addr)
+                let str = Buffer.from(stringBuffer)
+                return new PDFString(str.toString(config.get('pdf.encoding')))
+            }else{
+                if(ch === 0x28){ // (
+                    parenCnt ++
+                }else if(ch === 0x29){ // )
+                    parenCnt --
+                }
+                stringBuffer.push(ch)
+            }
+        }
+    }
+
+    getLiteralString(prevCh){
+        let pdfObj = this.getStringObject(prevCh, "(", ")")
+        if(pdfObj){
+            return new PDFLiteralString(pdfObj.val)
+        }else{
+            return null
+        }
+    }
 }
