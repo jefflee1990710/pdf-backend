@@ -2,7 +2,8 @@ import helper from "../src/helper";
 import config from 'config'
 import {
     PDFBoolean,
-    PDFInteger
+    PDFInteger,
+    PDFReal
 } from './object'
 
 export default class Lexer {
@@ -28,7 +29,7 @@ export default class Lexer {
     }
 
     getObj(){
-        let fnl = [this.getBoolean, this.getInteger]
+        let fnl = [this.getBoolean, this.getInteger, this.getReal]
         for(let i in fnl){
             let fn = fnl[i]
             let value = fn.apply(this)
@@ -128,9 +129,59 @@ export default class Lexer {
         this.savePosition()
         let ch = this.currentChar | this.nextChar()
 
+        let sign = 1
+        
+        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
+            ch = this.nextChar()
+        }
 
-        this.restorePosition()
-        return null;
+        if(ch === 0x2D){ // - sign
+            sign = -1
+            ch = this.nextChar()
+        }else if(ch === 0x2B){ // + sign
+            sign = 1
+            ch = this.nextChar()
+        }
+        sign = sign | 1
+
+        // If next comming byte is not number
+        if(!helper.isNumber(ch) && ch !== 0x2E){ // Not number and "."
+            this.restorePosition()
+            return null;
+        }
+
+        let head = []
+        let tail = []
+        let scanningHead = true
+        while(true){
+            if(ch === 0x2E){
+                scanningHead = false
+                ch = this.nextChar()
+                continue
+            }else if(helper.isNumber(ch)){
+                if(scanningHead){
+                    head.push(ch)
+                }else{
+                    tail.push(ch)
+                }
+            }
+
+            if(!helper.isNumber(ch)){
+                if(head.length > 0){
+                    head = head.map(r => String.fromCharCode(r))
+                    tail = tail.map(r => String.fromCharCode(r))
+                    let baseVal = `${head.join('')}.${tail.length > 0 ? tail.join('') : '0'}`
+                    return new PDFReal(sign * parseFloat(baseVal));
+                } else if(tail.length > 0){
+                    head = head.map(r => String.fromCharCode(r))
+                    tail = tail.map(r => String.fromCharCode(r))
+                    let baseVal = `0.${tail.join('')}`
+                    return new PDFReal(sign * parseFloat(baseVal));
+                }
+            }
+
+            ch = this.nextChar()
+        }
     }
 
 }

@@ -78,7 +78,7 @@ describe('Lexer', () => {
 
     describe('#getReal', () => {
         it('can read PostScript script for real', () => {
-            let numbers = ['123', '43445', '+17', '-98', '0'];
+            let numbers = ['34.5', '-3.62', '+123.4', '4.0', '-.002', '0.0', '123', '43445', '+17', '-98', '0'];
             for (var i = 0; i < numbers.length; i++) {
                 let num = numbers[i];
                 let reader = new ByteArrayReader(Buffer.from(num, pdfEncoding))
@@ -98,7 +98,9 @@ describe('Lexer', () => {
                 let reader = new ByteArrayReader(Buffer.from(num, pdfEncoding))
                 let stream = new BufferStream(reader)
                 let lexer = new Lexer(stream)
-                let {val} = lexer.getObj()
+                let pdfobj = lexer.getObj()
+                let {val} = pdfobj
+                expect(pdfobj.constructor.name).equal('PDFInteger')
                 expect(val).equal(parseInt(num));
             }
         })
@@ -106,15 +108,30 @@ describe('Lexer', () => {
             let reader = new ByteArrayReader(Buffer.from('true', pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
-            let {val} = lexer.getObj()
+            let pdfobj = lexer.getObj()
+            let {val} = pdfobj
+            expect(pdfobj.constructor.name).equal('PDFBoolean')
             expect(val).equal(true);
         })
         it('can read false from stream', () => {
             let reader = new ByteArrayReader(Buffer.from('false', pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
-            let {val} = lexer.getObj()
+            let pdfobj = lexer.getObj()
+            let {val} = pdfobj
+            expect(pdfobj.constructor.name).equal('PDFBoolean')
             expect(val).equal(false);
+        })
+        it('can read PostScript script for real', () => {
+            let numbers = ['34.5', '-3.62', '+123.4', '4.0', '-.002', '0.0', '123', '43445', '+17', '-98', '0'];
+            for (var i = 0; i < numbers.length; i++) {
+                let num = numbers[i];
+                let reader = new ByteArrayReader(Buffer.from(num, pdfEncoding))
+                let stream = new BufferStream(reader)
+                let lexer = new Lexer(stream)
+                let {val} = lexer.getObj()
+                expect(val).equal(parseFloat(num));
+            }
         })
     })
 
