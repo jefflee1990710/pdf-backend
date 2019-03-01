@@ -6,13 +6,20 @@ import {
     PDFCmd,
     PDFString,
     PDFLiteralString,
-    PDFHexadecimalString
+    PDFHexadecimalString,
+    PDFName
 } from './object'
 
 export default class Lexer {
 
     constructor(bufferStream){
         this.stream = bufferStream
+        this.objectMap = {
+            "LiteralString" : this.getLiteralString,
+            "HexadecimalString" :  this.getHexadecimalString,
+            "Boolean" : this.getBoolean, 
+            "Real" : this.getReal
+        }
     }
 
     savePosition(){
@@ -35,13 +42,16 @@ export default class Lexer {
         return this.stream.peekByte();
     }
 
-    getObj(){
-        let fnl = [
-            this.getBoolean, 
-            this.getReal, 
-            this.getLiteralString,
-            this.getHexadecimalString
-        ]
+    getObj(...objectTypes){
+        let fnl = []
+        if(objectTypes.length === 0){
+            fnl = Object.keys(this.objectMap).map((i) => this.objectMap[i])
+        }else{
+            for(let i in objectTypes){
+                let type = objectTypes[i]
+                fnl.push(this.objectMap[type])
+            }
+        }
         for(let i in fnl){
             let fn = fnl[i]
             let value = fn.apply(this)
@@ -59,13 +69,13 @@ export default class Lexer {
         let cmdBuf = Buffer.from(cmd, config.get("pdf.encoding"))
         let cnt = 0
         while(true){
-            if(cnt >= cmdBuf.length - 1){
-                this.cleanSavedPosition(addr)
-                return new PDFCmd(cmd)
-            }
             if(ch !== cmdBuf[cnt]){
                 this.restorePosition(addr)
                 return null
+            }
+            if(cnt >= cmdBuf.length - 1){
+                this.cleanSavedPosition(addr)
+                return new PDFCmd(cmd)
             }
             ch = this.nextChar()
             cnt ++
@@ -104,13 +114,12 @@ export default class Lexer {
     getReal(prevCh){
         let addr = this.savePosition()
         let ch = prevCh || this.nextChar()
-
-        let sign = 1
         
         while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
             ch = this.nextChar()
         }
 
+        let sign = 1
         if(ch === 0x2D){ // - sign
             sign = -1
             ch = this.nextChar()
@@ -166,6 +175,10 @@ export default class Lexer {
         let addr = this.savePosition()
         let ch = prevCh || this.nextChar()
 
+        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
+            ch = this.nextChar()
+        }
+
         let openingCmd = this.getCmd(ch, startBy)
         if(!openingCmd){
             this.restorePosition(addr)
@@ -177,6 +190,7 @@ export default class Lexer {
 
         while(true){
             ch = this.nextChar()
+            
             if(String.fromCharCode(ch) === closeBy && parenCnt === 0){
                 this.cleanSavedPosition(addr)
                 let str = Buffer.from(stringBuffer)
@@ -214,6 +228,44 @@ export default class Lexer {
         }else{
             return null
         }
+    }
+
+    getName(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
+            ch = this.nextChar()
+        }
+
+        let nameCmd = this.getCmd(ch, "/")
+        if(!nameCmd){
+            this.restorePosition(addr)
+            return null
+        }
+
+        let nameArr = []
+        while(true){
+            ch = this.nextChar()
+    
+            if(ch === null){
+                this.cleanSavedPosition(addr)
+                return new PDFName(nameArr.join(''))
+            }
+
+            if(ch === 0x23){
+                let hexArr = []
+                ch = this.nextChar()
+                hexArr.push(ch)
+                ch = this.nextChar()
+                hexArr.push(ch)
+                let hexStr = Buffer.from(hexArr).toString(config.get('pdf.encoding'))
+                nameArr.push(helper.hexToAscii(hexStr))
+            }else{
+                nameArr.push(String.fromCharCode(ch))
+            }
+        }
+
     }
 
 }

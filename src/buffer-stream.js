@@ -165,8 +165,7 @@ export default class BufferStream {
 
     cleanSavedPosition(addr){
         this.savedPosition[addr] = null
+        delete this.savedPosition[addr]
     }
 
-
-    
 }

@@ -39,3 +39,10 @@ export class PDFHexadecimalString {
         this.val = val
     }
 }
+
+export class PDFName {
+
+    constructor(val){
+        this.val = val
+    }
+}
