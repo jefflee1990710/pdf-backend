@@ -58,80 +58,80 @@ describe('Lexer', () => {
 
     describe('#getBoolean', () => {
         it('can read true from stream', () => {
-            let reader = new ByteArrayReader(Buffer.from('true', pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(' true', pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfobj = lexer.getBoolean()
             let {val} = pdfobj
             expect(pdfobj.constructor.name).equal('PDFBoolean')
             expect(val).equal(true);
-            expect(stream.position).equal(4)
+            expect(stream.position).equal(5)
         })
         it('can read true from stream with suffix', () => {
-            let reader = new ByteArrayReader(Buffer.from('truesuffix', pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(' truesuffix', pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfobj = lexer.getBoolean()
             let {val} = pdfobj
             expect(pdfobj.constructor.name).equal('PDFBoolean')
             expect(val).equal(true);
-            expect(stream.position).equal(4)
+            expect(stream.position).equal(5)
         })
         it('can read false from stream', () => {
-            let reader = new ByteArrayReader(Buffer.from('false', pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(' false', pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfobj = lexer.getBoolean()
             let {val} = pdfobj
             expect(pdfobj.constructor.name).equal('PDFBoolean')
             expect(val).equal(false);
-            expect(stream.position).equal(5)
+            expect(stream.position).equal(6)
         })
         it('can read false from stream with suffix', () => {
-            let reader = new ByteArrayReader(Buffer.from('falsesuffix', pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(' falsesuffix', pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfobj = lexer.getBoolean()
             let {val} = pdfobj
             expect(pdfobj.constructor.name).equal('PDFBoolean')
             expect(val).equal(false);
-            expect(stream.position).equal(5)
+            expect(stream.position).equal(6)
         })
     })
 
     describe('#getCmd', () => {
         it('can read cmd as string', () => {
-            let reader = new ByteArrayReader(Buffer.from('<<dict start>>', pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(' <<dict start>>', pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfobj = lexer.getCmd(null, "<<")
             let {val} = pdfobj
             expect(pdfobj.constructor.name).equal('PDFCmd')
             expect(val).equal("<<");
-            expect(stream.position).equal(2)
+            expect(stream.position).equal(3)
         })
         it('can read cmd as string with suffix', () => {
-            let reader = new ByteArrayReader(Buffer.from('truesuffix', pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(' truesuffix', pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfobj = lexer.getCmd(null, "true")
             let {val} = pdfobj
             expect(pdfobj.constructor.name).equal('PDFCmd')
             expect(val).equal("true");
-            expect(stream.position).equal(4)
+            expect(stream.position).equal(5)
         })
         it('can read cmd at the end of the stream', () => {
-            let reader = new ByteArrayReader(Buffer.from('<<', pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(' <<', pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfobj = lexer.getCmd(null, "<<")
             let {val} = pdfobj
             expect(pdfobj.constructor.name).equal('PDFCmd')
             expect(val).equal("<<");
-            expect(stream.position).equal(2)
+            expect(stream.position).equal(3)
         })
         it('should return null for command not found', () => {
-            let reader = new ByteArrayReader(Buffer.from('truesuffix', pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(' truesuffix', pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfobj = lexer.getCmd(null, "(")
@@ -155,21 +155,21 @@ describe('Lexer', () => {
         })
 
         it('should consume the stream to right position', () => {
-            let reader = new ByteArrayReader(Buffer.from('34.5 ', pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(' 34.5 ', pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let {val} = lexer.getReal()
             expect(val).equal(parseFloat(34.5));
-            expect(stream.position).equal(4)
+            expect(stream.position).equal(5)
         })
 
         it('should consume the stream to right position after the input', () => {
-            let reader = new ByteArrayReader(Buffer.from('34.5', pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(' 34.5', pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let {val} = lexer.getReal()
             expect(val).equal(parseFloat(34.5));
-            expect(stream.position).equal(4)
+            expect(stream.position).equal(5)
         })
 
         it('should return null for non number object', () => {
@@ -185,84 +185,111 @@ describe('Lexer', () => {
         })
     })
 
-    describe('#getliteralString', () => {
+    describe('#getOctal', () => {
+        it('can read octal with two digital', () => {
+            let reader = new ByteArrayReader(Buffer.from(' \\51', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let {val} = lexer.getOctal()
+            expect(val).equal(')');
+            expect(stream.position).equal(4)
+        })
+        it('can read octal with three digital', () => {
+            let reader = new ByteArrayReader(Buffer.from('\\101', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let {val} = lexer.getOctal()
+            expect(val).equal('A');
+            expect(stream.position).equal(4)
+        })
+    })
+
+    describe('#getLiteralString', () => {
         it('can read single parenthsis string', () => {
-            let reader = new ByteArrayReader(Buffer.from("(This is a string)", pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(" (This is a string) ", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfObj = lexer.getLiteralString()
             let {val} = pdfObj
             expect(pdfObj.constructor.name).equal("PDFLiteralString")
             expect(val).equal("This is a string");
+            expect(stream.position).equal(19)
         })
         it('can read string contain new line', () => {
-            let reader = new ByteArrayReader(Buffer.from("(This is a string \n with new line)", pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(" (This is a string \n with new line) ", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfObj = lexer.getLiteralString()
             let {val} = pdfObj
             expect(pdfObj.constructor.name).equal("PDFLiteralString")
             expect(val).equal("This is a string \n with new line");
+            expect(stream.position).equal(35)
         })
         it('can read string with balanced parentheses', () => {
-            let reader = new ByteArrayReader(Buffer.from("(This is a string (with balanced parentheses) no problem)", pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(" (This is a string (with balanced parentheses) no problem) ", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfObj = lexer.getLiteralString()
             let {val} = pdfObj
             expect(pdfObj.constructor.name).equal("PDFLiteralString")
             expect(val).equal("This is a string (with balanced parentheses) no problem");
+            expect(stream.position).equal(58)
         })
         it('can read string with 0 length', () => {
-            let reader = new ByteArrayReader(Buffer.from("()", pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(" () ", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfObj = lexer.getLiteralString()
             let {val} = pdfObj
             expect(pdfObj.constructor.name).equal("PDFLiteralString")
             expect(val).equal("");
+            expect(stream.position).equal(3)
         })
     })
 
     describe('#getHexadecimalString()', () => {
         it('can read paired hexdecimal string', () => {
-            let reader = new ByteArrayReader(Buffer.from("<A3F234C4DEA0>", pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(" <A3F234C4DEA0> ", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfObj = lexer.getHexadecimalString()
             let {val} = pdfObj
             expect(pdfObj.constructor.name).equal("PDFHexadecimalString")
             expect(val).equal("A3F234C4DEA0");
+            expect(stream.position).equal(15)
         })
         it('can read hexdecimal string missing last zero', () => {
-            let reader = new ByteArrayReader(Buffer.from("<A3F234C4DEA>", pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(" <A3F234C4DEA> ", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfObj = lexer.getHexadecimalString()
             let {val} = pdfObj
             expect(pdfObj.constructor.name).equal("PDFHexadecimalString")
             expect(val).equal("A3F234C4DEA0");
+            expect(stream.position).equal(14)
         })
     })
 
     describe('#getName()', () => {
         it('read a simple name', () => {
-            let reader = new ByteArrayReader(Buffer.from("/Name1", pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(" /Name1 ", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfObj = lexer.getName()
             let {val} = pdfObj
             expect(pdfObj.constructor.name).equal("PDFName")
             expect(val).equal("Name1");
+            expect(stream.position).equal(7)
         })
         it('read a longer name', () => {
-            let reader = new ByteArrayReader(Buffer.from("/ThisIsAMuchLongerName", pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(" /ThisIsAMuchLongerName ", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfObj = lexer.getName()
             let {val} = pdfObj
             expect(pdfObj.constructor.name).equal("PDFName")
             expect(val).equal("ThisIsAMuchLongerName");
+            expect(stream.position).equal(23)
         })
         it('read a name with various character', () => {
             let reader = new ByteArrayReader(Buffer.from("/A;Name_With-Various***Characters?", pdfEncoding))

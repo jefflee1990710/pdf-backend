@@ -78,21 +78,28 @@ export default class Lexer {
         let addr = this.savePosition()
         let ch = prevCh || this.nextChar()
         
+        let buff = [] 
         while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
+            buff.push(ch)
             ch = this.nextChar()
             if(!(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch))){
                 this.rewindPosition()
             }
         }
         this.cleanSavedPosition(addr)
-        return new PDFSpace("")
+        if(buff.length > 0){
+            return new PDFSpace(buff.toString(config.get('pdf.encoding')))
+        }
+        return null
     }
 
     getCmd(prevCh, cmd){
         let addr = this.savePosition()
         let ch = prevCh || this.nextChar()
 
-        this.getSpace(ch)
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
 
         let cmdBuf = Buffer.from(cmd, config.get("pdf.encoding"))
         let cnt = 0
@@ -114,7 +121,8 @@ export default class Lexer {
     getBoolean(prevCh){
         let addr = this.savePosition()
         let ch = prevCh || this.nextChar()
-        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
+        
+        if(this.getSpace(ch)){
             ch = this.nextChar()
         }
 
@@ -143,7 +151,7 @@ export default class Lexer {
         let addr = this.savePosition()
         let ch = prevCh || this.nextChar()
         
-        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
+        if(this.getSpace(ch)){
             ch = this.nextChar()
         }
 
@@ -205,6 +213,10 @@ export default class Lexer {
         let addr = this.savePosition()
         let ch = prevCh || this.nextChar()
 
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
+
         if(ch === 0x5C){
             let ch1 = this.nextChar()
             let ch2 = this.nextChar()
@@ -217,7 +229,7 @@ export default class Lexer {
                     let byte = parseInt(buf.toString(config.get('pdf.encoding')))
                     return new PDFOctalBytes(String.fromCharCode(parseInt(byte, 8)))
                 }else{
-                    let arr = [0x00, ch1, ch2]
+                    let arr = [ch1, ch2]
                     let buf = Buffer.from(arr)
                     let byte = parseInt(buf.toString(config.get('pdf.encoding')))
                     return new PDFOctalBytes(String.fromCharCode(parseInt(byte, 8)))
@@ -236,7 +248,7 @@ export default class Lexer {
         let addr = this.savePosition()
         let ch = prevCh || this.nextChar()
 
-        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
+        if(this.getSpace(ch)){
             ch = this.nextChar()
         }
 
@@ -336,7 +348,7 @@ export default class Lexer {
         let addr = this.savePosition()
         let ch = prevCh || this.nextChar()
 
-        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
+        if(this.getSpace(ch)){
             ch = this.nextChar()
         }
 
@@ -350,12 +362,18 @@ export default class Lexer {
         while(true){
             ch = this.nextChar()
     
-            if(ch === null){
-                this.cleanSavedPosition(addr)
-                return new PDFName(nameArr.join(''))
+            if(ch === null || (ch < 0x21 || ch > 0x7E)){
+                if(nameArr.length > 0){
+                    this.rewindPosition()
+                    this.cleanSavedPosition(addr)
+                    return new PDFName(nameArr.join(''))
+                }else{
+                    this.restorePosition(addr)
+                    return null
+                }
             }
 
-            if(ch === 0x23){
+            if(ch === 0x23){ // "#"
                 let hexArr = []
                 ch = this.nextChar()
                 hexArr.push(ch)
@@ -374,7 +392,7 @@ export default class Lexer {
         let addr = this.savePosition()
         let ch = prevCh || this.nextChar()
 
-        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
+        if(this.getSpace(ch)){
             ch = this.nextChar()
         }
 
@@ -395,7 +413,7 @@ export default class Lexer {
         let addr = this.savePosition()
         let ch = prevCh || this.nextChar()
 
-        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
+        if(this.getSpace(ch)){
             ch = this.nextChar()
         }
 
@@ -414,9 +432,7 @@ export default class Lexer {
                 return null
             }
  
-            console.log('before get array', this.stream.position, String.fromCharCode(ch))
             let foundElem = this.getArrayElement(ch)
-            console.log('after get array', this.stream.position, String.fromCharCode(ch))
             if(!foundElem){
                 console.warn("invalidate element found in the array")
             }else{
