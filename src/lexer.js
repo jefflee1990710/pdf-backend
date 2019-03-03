@@ -1,13 +1,16 @@
 import config from 'config'
 import helper from "../src/helper";
 import {
+    PDFSpace,
     PDFBoolean,
     PDFReal,
     PDFCmd,
     PDFString,
     PDFLiteralString,
     PDFHexadecimalString,
-    PDFName
+    PDFName,
+    PDFOctalBytes,
+    PDFArray
 } from './object'
 
 export default class Lexer {
@@ -33,6 +36,10 @@ export default class Lexer {
     cleanSavedPosition(addr){
         this.stream.cleanSavedPosition(addr)
     }
+
+    rewindPosition(){
+        this.stream.rewindPosition()
+    }
     
     nextChar(){
         return this.stream.getByte()
@@ -42,7 +49,10 @@ export default class Lexer {
         return this.stream.peekByte();
     }
 
-    getObj(...objectTypes){
+    getObj(prevCh, ...objectTypes){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
         let fnl = []
         if(objectTypes.length === 0){
             fnl = Object.keys(this.objectMap).map((i) => this.objectMap[i])
@@ -54,17 +64,35 @@ export default class Lexer {
         }
         for(let i in fnl){
             let fn = fnl[i]
-            let value = fn.apply(this)
+            let value = fn.apply(this, [ch])
             if(value) {
+                this.cleanSavedPosition(addr)
                 return value
             }
         }
+        this.restorePosition(addr)
         return null
+    }
+
+    getSpace(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+        
+        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
+            ch = this.nextChar()
+            if(!(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch))){
+                this.rewindPosition()
+            }
+        }
+        this.cleanSavedPosition(addr)
+        return new PDFSpace("")
     }
 
     getCmd(prevCh, cmd){
         let addr = this.savePosition()
         let ch = prevCh || this.nextChar()
+
+        this.getSpace(ch)
 
         let cmdBuf = Buffer.from(cmd, config.get("pdf.encoding"))
         let cnt = 0
@@ -127,7 +155,6 @@ export default class Lexer {
             sign = 1
             ch = this.nextChar()
         }
-        sign = sign | 1
 
         // If next comming byte is not number
         if(!helper.isNumber(ch) && ch !== 0x2E){ // Not number and "."
@@ -139,7 +166,7 @@ export default class Lexer {
         let tail = []
         let scanningHead = true
         while(true){
-            if(ch === 0x2E){
+            if(ch === 0x2E){ // .
                 scanningHead = false
                 ch = this.nextChar()
                 continue
@@ -151,7 +178,10 @@ export default class Lexer {
                 }
             }
 
-            if(!helper.isNumber(ch)){
+            if(!helper.isNumber(ch) || ch === null){
+                if(ch != null){
+                    this.rewindPosition()
+                }
                 if(head.length > 0){
                     head = head.map(r => String.fromCharCode(r))
                     tail = tail.map(r => String.fromCharCode(r))
@@ -168,6 +198,37 @@ export default class Lexer {
             }
 
             ch = this.nextChar()
+        }
+    }
+
+    getOctal(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        if(ch === 0x5C){
+            let ch1 = this.nextChar()
+            let ch2 = this.nextChar()
+            let ch3 = this.peekChar()
+            if(helper.isNumber(ch1) && helper.isNumber(ch2)){
+                if(helper.isNumber(ch3)){
+                    ch3 = this.nextChar()
+                    let arr = [ch1, ch2, ch3]
+                    let buf = Buffer.from(arr)
+                    let byte = parseInt(buf.toString(config.get('pdf.encoding')))
+                    return new PDFOctalBytes(String.fromCharCode(parseInt(byte, 8)))
+                }else{
+                    let arr = [0x00, ch1, ch2]
+                    let buf = Buffer.from(arr)
+                    let byte = parseInt(buf.toString(config.get('pdf.encoding')))
+                    return new PDFOctalBytes(String.fromCharCode(parseInt(byte, 8)))
+                }
+            }else{
+                this.restorePosition(addr)
+            return null
+            }
+        }else{
+            this.restorePosition(addr)
+            return null
         }
     }
 
@@ -193,15 +254,56 @@ export default class Lexer {
             
             if(String.fromCharCode(ch) === closeBy && parenCnt === 0){
                 this.cleanSavedPosition(addr)
-                let str = Buffer.from(stringBuffer)
-                return new PDFString(str.toString(config.get('pdf.encoding')))
+                return new PDFString(stringBuffer.join(''))
             }else{
                 if(ch === 0x28){ // (
                     parenCnt ++
                 }else if(ch === 0x29){ // )
                     parenCnt --
                 }
-                stringBuffer.push(ch)
+                // Check octla
+                let octalCode = this.getOctal(ch)
+                if(octalCode){
+                    stringBuffer.push(octalCode.val)
+                } else if(ch === 0x5C){ // Check escape
+                    ch = this.nextChar()
+                    switch(ch){
+                        case 0x0A:
+                            stringBuffer.concat('\\n')
+                            break;
+                        case 0x0D:
+                            stringBuffer.concat('\\r')
+                            if(this.peekChar() === 0x0A){
+                                ch = this.nextChar()
+                                stringBuffer.concat('\\n')
+                            }
+                            break;
+                        case 0x09:
+                            stringBuffer.concat('\\t')
+                            break;
+                        case 0x08:
+                            stringBuffer.concat('\\b')
+                            break;
+                        case 0xFF:
+                            stringBuffer.concat('\\f')
+                            break;
+                        case 0x28:
+                            stringBuffer.concat('\\(')
+                            break;
+                        case 0x29:
+                            stringBuffer.concat('\\)')
+                            break;
+                        case 0x5C:
+                            stringBuffer.concat('\\')
+                            break;
+                        default:
+                            console.warn('Not found', ch);
+                            break
+                            // Ignore if not in table 3 in page 13 of PDF32000_2008.pdf 
+                    }
+                }else{
+                    stringBuffer.push(String.fromCharCode(ch))
+                }
             }
         }
     }
@@ -266,6 +368,68 @@ export default class Lexer {
             }
         }
 
+    }
+
+    getArrayElement(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
+            ch = this.nextChar()
+        }
+
+        let fnl = [this.getReal]
+        for(let i in fnl){
+            let fn = fnl[i]
+            let value = fn.apply(this, [ch])
+            if(value) {
+                this.cleanSavedPosition(addr)
+                return value
+            }
+        }
+        this.restorePosition(addr)
+        return null
+    }
+
+    getArray(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
+            ch = this.nextChar()
+        }
+
+        let arrayCmd = this.getCmd(ch, "[")
+        if(!arrayCmd){
+            this.restorePosition(addr)
+            return null
+        }
+
+        // Loop and file all element
+        ch = this.nextChar()
+        let result = []
+        while(true){
+            if(ch === null){
+                this.restorePosition(addr)
+                return null
+            }
+ 
+            console.log('before get array', this.stream.position, String.fromCharCode(ch))
+            let foundElem = this.getArrayElement(ch)
+            console.log('after get array', this.stream.position, String.fromCharCode(ch))
+            if(!foundElem){
+                console.warn("invalidate element found in the array")
+            }else{
+                result.push(foundElem)
+            }
+            ch = this.nextChar()
+
+            let endCmd = this.getCmd(ch, "]")
+            if(endCmd){
+                this.cleanSavedPosition(addr)
+                return new PDFArray(result)
+            }
+        }
     }
 
 }

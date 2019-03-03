@@ -1,3 +1,10 @@
+export class PDFSpace {
+
+    constructor(val){
+        this.val = val
+    }
+}
+
 export class PDFBoolean {
 
     constructor(val){
@@ -13,6 +20,13 @@ export class PDFReal {
 }
 
 export class PDFCmd {
+
+    constructor(val){
+        this.val = val
+    }
+}
+
+export class PDFOctalBytes {
 
     constructor(val){
         this.val = val
@@ -41,6 +55,13 @@ export class PDFHexadecimalString {
 }
 
 export class PDFName {
+
+    constructor(val){
+        this.val = val
+    }
+}
+
+export class PDFArray {
 
     constructor(val){
         this.val = val

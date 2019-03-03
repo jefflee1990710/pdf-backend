@@ -45,6 +45,17 @@ describe('Lexer', () => {
         })
     })
 
+    describe('#getSpace', () => {
+        it('can read multiple space', () => {
+            let reader = new ByteArrayReader(Buffer.from(' somethingbehind', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfobj = lexer.getSpace()
+            expect(pdfobj.constructor.name).equal('PDFSpace')
+            expect(stream.position).equal(1)
+        })
+    })
+
     describe('#getBoolean', () => {
         it('can read true from stream', () => {
             let reader = new ByteArrayReader(Buffer.from('true', pdfEncoding))
@@ -54,6 +65,7 @@ describe('Lexer', () => {
             let {val} = pdfobj
             expect(pdfobj.constructor.name).equal('PDFBoolean')
             expect(val).equal(true);
+            expect(stream.position).equal(4)
         })
         it('can read true from stream with suffix', () => {
             let reader = new ByteArrayReader(Buffer.from('truesuffix', pdfEncoding))
@@ -63,6 +75,7 @@ describe('Lexer', () => {
             let {val} = pdfobj
             expect(pdfobj.constructor.name).equal('PDFBoolean')
             expect(val).equal(true);
+            expect(stream.position).equal(4)
         })
         it('can read false from stream', () => {
             let reader = new ByteArrayReader(Buffer.from('false', pdfEncoding))
@@ -72,6 +85,7 @@ describe('Lexer', () => {
             let {val} = pdfobj
             expect(pdfobj.constructor.name).equal('PDFBoolean')
             expect(val).equal(false);
+            expect(stream.position).equal(5)
         })
         it('can read false from stream with suffix', () => {
             let reader = new ByteArrayReader(Buffer.from('falsesuffix', pdfEncoding))
@@ -81,6 +95,7 @@ describe('Lexer', () => {
             let {val} = pdfobj
             expect(pdfobj.constructor.name).equal('PDFBoolean')
             expect(val).equal(false);
+            expect(stream.position).equal(5)
         })
     })
 
@@ -93,6 +108,7 @@ describe('Lexer', () => {
             let {val} = pdfobj
             expect(pdfobj.constructor.name).equal('PDFCmd')
             expect(val).equal("<<");
+            expect(stream.position).equal(2)
         })
         it('can read cmd as string with suffix', () => {
             let reader = new ByteArrayReader(Buffer.from('truesuffix', pdfEncoding))
@@ -102,6 +118,17 @@ describe('Lexer', () => {
             let {val} = pdfobj
             expect(pdfobj.constructor.name).equal('PDFCmd')
             expect(val).equal("true");
+            expect(stream.position).equal(4)
+        })
+        it('can read cmd at the end of the stream', () => {
+            let reader = new ByteArrayReader(Buffer.from('<<', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfobj = lexer.getCmd(null, "<<")
+            let {val} = pdfobj
+            expect(pdfobj.constructor.name).equal('PDFCmd')
+            expect(val).equal("<<");
+            expect(stream.position).equal(2)
         })
         it('should return null for command not found', () => {
             let reader = new ByteArrayReader(Buffer.from('truesuffix', pdfEncoding))
@@ -109,6 +136,7 @@ describe('Lexer', () => {
             let lexer = new Lexer(stream)
             let pdfobj = lexer.getCmd(null, "(")
             expect(pdfobj).equal(null);
+            expect(stream.position).equal(0)
         })
     })
 
@@ -122,7 +150,26 @@ describe('Lexer', () => {
                 let lexer = new Lexer(stream)
                 let {val} = lexer.getReal()
                 expect(val).equal(parseFloat(num));
+                expect(stream.position, "Finally position is not correct for " + num).equal(num.length)
             }
+        })
+
+        it('should consume the stream to right position', () => {
+            let reader = new ByteArrayReader(Buffer.from('34.5 ', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let {val} = lexer.getReal()
+            expect(val).equal(parseFloat(34.5));
+            expect(stream.position).equal(4)
+        })
+
+        it('should consume the stream to right position after the input', () => {
+            let reader = new ByteArrayReader(Buffer.from('34.5', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let {val} = lexer.getReal()
+            expect(val).equal(parseFloat(34.5));
+            expect(stream.position).equal(4)
         })
 
         it('should return null for non number object', () => {
@@ -300,6 +347,58 @@ describe('Lexer', () => {
         })
     })
 
+    describe('#getArrayElement', () => {
+        it('should read any array elements', () => {
+            let reader = new ByteArrayReader(Buffer.from("12", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getArrayElement()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFReal")
+            expect(val).equal(12)
+            expect(stream.position).equal(2);
+        })
+    })
+
+    describe('#getArray', () => {
+        it('can read a simple integer array', () => {
+            let reader = new ByteArrayReader(Buffer.from("[1 2 3 4]", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getArray()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFArray")
+            expect(val[0].val).equal(1)
+            expect(val[1].val).equal(2)
+            expect(val[2].val).equal(3)
+            expect(val[3].val).equal(4)
+        })
+        it('have a linebreak in the middle of the array', () => {
+            let reader = new ByteArrayReader(Buffer.from("[1 2\n 3\r\n 4]", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getArray()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFArray")
+            expect(val[0].val).equal(1)
+            expect(val[1].val).equal(2)
+            expect(val[2].val).equal(3)
+            expect(val[3].val).equal(4)
+        })
+        it('can read a simple real number array', () => {
+            let reader = new ByteArrayReader(Buffer.from("[3.5 -33.2 12 -.32]", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getArray()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFArray")
+            expect(val[0].val).equal(3.5)
+            expect(val[1].val).equal(-33.2)
+            expect(val[2].val).equal(12)
+            expect(val[3].val).equal(-0.32)
+        })
+    })
+
     describe('#getObj', () => {
         it('can read PostScript syntax for integer or boolean', () => {
             let numbers = ['123', '43445', '+17', '-98', '0'];
@@ -398,6 +497,7 @@ describe('Lexer', () => {
             expect(val).equal("");
         })
         it('should ignore escaped CR and LF', () => {
+            // \101\\r\n\102\\r\103\\n\104
             let reader = new ByteArrayReader(Buffer.from("(\\101\\\r\n\\102\\\r\\103\\\n\\104)", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
