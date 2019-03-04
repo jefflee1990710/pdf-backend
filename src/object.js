@@ -67,3 +67,17 @@ export class PDFArray {
         this.val = val
     }
 }
+
+export class PDFDictEntry {
+
+    constructor(val){
+        this.val = val
+    }
+}
+
+export class PDFDict {
+
+    constructor(val){
+        this.val = val
+    }
+}

@@ -5,6 +5,7 @@ import {ByteArrayReader} from '../src/reader'
 import Lexer from "../src/lexer";
 import config from 'config'
 import {expect} from 'chai'
+import { O_TRUNC } from "constants";
 
 let pdfEncoding = config.get('pdf.encoding')
 
@@ -413,7 +414,7 @@ describe('Lexer', () => {
             expect(val[3].val).equal(4)
         })
         it('can read a simple real number array', () => {
-            let reader = new ByteArrayReader(Buffer.from("[3.5 -33.2 12 -.32]", pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(" [3.5 -33.2 12 -.32] ", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfObj = lexer.getArray()
@@ -423,6 +424,104 @@ describe('Lexer', () => {
             expect(val[1].val).equal(-33.2)
             expect(val[2].val).equal(12)
             expect(val[3].val).equal(-0.32)
+            expect(stream.position).equal(20)
+        })
+        it('can read a sarray with mixed object', () => {
+            let reader = new ByteArrayReader(Buffer.from("[3.5 /Name1 (I am a String) <A3F234C4DEA0> [12 13 14]]", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getArray()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFArray")
+            expect(val[0].val).equal(3.5)
+            expect(val[1].val).equal("Name1")
+            expect(val[2].val).equal("I am a String")
+            expect(val[3].val).equal("A3F234C4DEA0")
+            expect(val[4].constructor.name).equal("PDFArray")
+            expect(stream.position).equal(54)
+        })
+        it('can read a array with linebreak', () => {
+            let reader = new ByteArrayReader(Buffer.from("[3.5 \n\r /Name1 \n\n(I am a String) ]", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getArray()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFArray")
+            expect(val[0].val).equal(3.5)
+            expect(val[1].val).equal("Name1")
+            expect(val[2].val).equal("I am a String")
+            expect(stream.position).equal(34)
+        })
+        it('can read a empty array', () => {
+            let reader = new ByteArrayReader(Buffer.from(" [ ] ", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getArray()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFArray")
+            expect(val.length).equal(0)
+            expect(stream.position).equal(4)
+        })
+        it('can read array with name', () => {
+            let reader = new ByteArrayReader(Buffer.from(" [/Name1 /Name2 /Name3] ", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getArray()
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).equal("PDFArray")
+            expect(val[0].val).equal('Name1')
+            expect(val[1].val).equal("Name2")
+            expect(val[2].val).equal("Name3")
+            expect(val.length).equal(3)
+            expect(stream.position).equal(23)
+        })
+    })
+
+    describe('#getDictEntry()', () => {
+        it('can read a simple entry', () => {
+            let reader = new ByteArrayReader(Buffer.from("/Type /Example", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getDictEntry()
+            let {val} = pdfObj
+            expect(val.fieldname.val).equal("Type")
+            expect(val.value.val).equal("Example")
+            expect(stream.position).equal(13)
+        })
+        it('can read a simple entry with number', () => {
+            let reader = new ByteArrayReader(Buffer.from("/Version 0.01", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getDictEntry()
+            let {val} = pdfObj
+            expect(val.fieldname.val).equal("Version")
+            expect(val.value.val).equal(0.01)
+            expect(stream.position).equal(13)
+        })
+        it('can read a simple name entry without space', () => {
+            let reader = new ByteArrayReader(Buffer.from("/Type/Example", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getDictEntry()
+            let {val} = pdfObj
+            expect(val.fieldname.val).equal("Type")
+            expect(val.value.val).equal("Example")
+            expect(stream.position).equal(12)
+        })
+    })
+
+    describe('#getDict()', () => {
+        it('can read a simple dict', () => {
+            let strbuf = [
+                "<< /Type Example",
+                "/Version 0.01 >>"
+            ]
+            let reader = new ByteArrayReader(Buffer.from(strbuf.join("\n"), pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getDict()
+            let {val} = pdfObj
+            console.log(val)
         })
     })
 

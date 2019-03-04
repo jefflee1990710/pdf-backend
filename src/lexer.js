@@ -10,8 +10,31 @@ import {
     PDFHexadecimalString,
     PDFName,
     PDFOctalBytes,
-    PDFArray
+    PDFArray,
+    PDFDictEntry
 } from './object'
+import logger from './logger'
+
+  // A '1' in this array means the character is white space. A '1' or
+  // '2' means the character ends a name or command.
+const specialChars = [
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, // 0x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
+    1, 0, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0, 2, // 2x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, // 3x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 4x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, // 5x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 6x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0, // 7x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // ax
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // bx
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // cx
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // dx
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // ex
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  // fx
+];
 
 export default class Lexer {
 
@@ -362,7 +385,7 @@ export default class Lexer {
         while(true){
             ch = this.nextChar()
     
-            if(ch === null || (ch < 0x21 || ch > 0x7E)){
+            if(ch === null || (specialChars[ch] > 0) || (ch < 0x21 || ch > 0x7E)){
                 if(nameArr.length > 0){
                     this.rewindPosition()
                     this.cleanSavedPosition(addr)
@@ -396,7 +419,7 @@ export default class Lexer {
             ch = this.nextChar()
         }
 
-        let fnl = [this.getReal]
+        let fnl = [this.getName, this.getLiteralString, this.getHexadecimalString, this.getArray, this.getReal]
         for(let i in fnl){
             let fn = fnl[i]
             let value = fn.apply(this, [ch])
@@ -431,21 +454,92 @@ export default class Lexer {
                 this.restorePosition(addr)
                 return null
             }
- 
-            let foundElem = this.getArrayElement(ch)
-            if(!foundElem){
-                console.warn("invalidate element found in the array")
-            }else{
-                result.push(foundElem)
-            }
-            ch = this.nextChar()
 
             let endCmd = this.getCmd(ch, "]")
             if(endCmd){
                 this.cleanSavedPosition(addr)
                 return new PDFArray(result)
             }
+ 
+            let foundElem = this.getArrayElement(ch)
+            if(!foundElem){
+                logger.warn("invalidate element found in the array")
+            }else{
+                result.push(foundElem)
+            }
+            ch = this.nextChar()
         }
+    }
+
+    getDictValue(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
+
+        let fnl = [this.getName, this.getLiteralString, this.getHexadecimalString, this.getArray, this.getReal]
+        for(let i in fnl){
+            let fn = fnl[i]
+            let value = fn.apply(this, [ch])
+            if(value) {
+                this.cleanSavedPosition(addr)
+                return value
+            }
+        }
+        this.restorePosition(addr)
+        return null
+    }
+
+    getDictEntry(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
+
+        let name = this.getName(ch)
+        if(!name){
+            logger.warn("Entry name is not found")
+            this.restorePosition(addr)
+            return null
+        }
+
+        if(this.getSpace()){
+            ch = this.nextChar()
+        }
+
+        let value = this.getDictValue(ch)
+        if(!value){
+            logger.warn("Entry value is not found")
+            this.restorePosition(addr)
+            return null
+        }
+
+        this.cleanSavedPosition(addr)
+        return new PDFDictEntry({
+            fieldname : name,
+            value : value
+        })
+    }
+
+    getDict(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
+
+        let startCmd = this.getCmd(ch, "<<")
+        if(!startCmd){
+            this.restorePosition(addr)
+            return null
+        }
+
+
     }
 
 }
