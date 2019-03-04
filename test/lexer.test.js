@@ -514,6 +514,17 @@ describe('Lexer', () => {
             expect(val.length).equal(3)
             expect(stream.position).equal(23)
         })
+        it('can read a array of object reference', () => {
+            let reader = new ByteArrayReader(Buffer.from("[1 0 R 2 0 R 3 0 R]", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getArray()
+            let json = pdfObj.toJson()
+            expect(pdfObj.constructor.name).equal("PDFArray")
+            expect(json[0].str).is.eq('1 0 R')
+            expect(json[1].str).is.eq('2 0 R')
+            expect(json[2].str).is.eq('3 0 R')
+        })
     })
 
     describe('#getDictEntry()', () => {
@@ -609,6 +620,21 @@ describe('Lexer', () => {
             let pdfObj = lexer.getDict()
             let json = pdfObj.toJson()
             expect(json['Type']).equal('Example')
+        })
+        it('can read dictionary with object reference', () => {
+            let strbuf = [
+                "<< /Type /Example",
+                "/Version 0.01 /Reference 1 0 R /Reference2 12 0 R>>"
+            ]
+            let reader = new ByteArrayReader(Buffer.from(strbuf.join("\n"), pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getDict()
+            let json = pdfObj.toJson()
+            expect(json['Type']).equal('Example')
+            expect(json['Version']).equal(0.01)
+            expect(json['Reference'].str).is.equal('1 0 R')
+            expect(json['Reference2'].str).is.equal('12 0 R')
         })
     })
 
@@ -747,13 +773,14 @@ describe('Lexer', () => {
 
     describe('#getObjectReference', () => {
         it('read correct object reference', () => {
-            let reader = new ByteArrayReader(Buffer.from("1 0 R", pdfEncoding))
+            let reader = new ByteArrayReader(Buffer.from(" 1 0 R ", pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfObj = lexer.getObjectReference()
             expect(pdfObj.constructor.name).is.eq('PDFObjectReference')
             expect(pdfObj.objectNumber).is.eq(1)
             expect(pdfObj.generationNumber).is.eq(0)
+            expect(stream.position).is.eq(6)
         })
     })
 

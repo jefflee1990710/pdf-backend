@@ -472,7 +472,7 @@ export default class Lexer {
             ch = this.nextChar()
         }
 
-        let fnl = [this.getName, this.getDict, this.getArray, this.getLiteralString, this.getHexadecimalString, this.getReal]
+        let fnl = [this.getName, this.getObjectReference, this.getDict, this.getArray, this.getLiteralString, this.getHexadecimalString, this.getReal]
         for(let i in fnl){
             let fn = fnl[i]
             let value = fn.apply(this, [ch])
@@ -532,7 +532,7 @@ export default class Lexer {
             ch = this.nextChar()
         }
 
-        let fnl = [this.getName, this.getDict, this.getArray, this.getLiteralString, this.getHexadecimalString, this.getReal]
+        let fnl = [this.getName, this.getObjectReference, this.getDict, this.getArray, this.getLiteralString, this.getHexadecimalString, this.getReal]
         for(let i in fnl){
             let fn = fnl[i]
             let value = fn.apply(this, [ch])
@@ -780,7 +780,6 @@ export default class Lexer {
                     sections[curSectionPtr].entries.push(entry)
                     ch = this.nextChar()
                 }else{
-                    logger.error('Invalid XRef Table format. Found entry before header.')
                     this.restorePosition(addr)
                     return null
                 }
@@ -819,7 +818,6 @@ export default class Lexer {
         if(objNum){
             ch = this.nextChar()
         }else{
-            logger.warn('Invalid object format. Can\' find object number at expected position.')
             this.restorePosition(addr)
             return null
         }
@@ -828,7 +826,6 @@ export default class Lexer {
         if(genNum){
             ch = this.nextChar()
         }else{
-            logger.warn('Invalid object format. Can\' find generation number at expected position.')
             this.restorePosition(addr)
             return null
         }
@@ -837,7 +834,6 @@ export default class Lexer {
         if(objCmd){
             ch = this.nextChar()
         }else{
-            logger.warn('Invalid object format. Can\' find keyword "obj" at expected position')
             this.restorePosition(addr)
             return null
         }
@@ -886,7 +882,6 @@ export default class Lexer {
         if(objNum){
             ch = this.nextChar()
         }else{
-            logger.warn('Invalid object format. Can\' find object number at expected position.')
             this.restorePosition(addr)
             return null
         }
@@ -895,7 +890,6 @@ export default class Lexer {
         if(genNum){
             ch = this.nextChar()
         }else{
-            logger.warn('Invalid object format. Can\' find generation number at expected position.')
             this.restorePosition(addr)
             return null
         }
@@ -908,7 +902,6 @@ export default class Lexer {
                     generationNumber : genNum
                 })
         }else{
-            logger.warn('Invalid object format. Can\' find keyword "obj" at expected position')
             this.restorePosition(addr)
             return null
         }

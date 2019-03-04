@@ -3,6 +3,10 @@ export class PDFObject {
         this.val = val
     }
 
+    toString(){
+        return JSON.stringify(this.val)
+    }
+
     toJson(){
         return this.val
     }
@@ -233,13 +237,25 @@ export class PDFObjectReference extends PDFObject{
     constructor(val){
         super(val)
     }
-    
+
     get objectNumber(){
         return this.val.objectNumber.toJson()
     }
 
     get generationNumber(){
         return this.val.generationNumber.toJson()
+    }
+
+    toString(){
+        return `${this.objectNumber} ${this.generationNumber} R`
+    }
+
+    toJson(){
+        return {
+            objectNumber : this.objectNumber,
+            generationNumber : this.generationNumber,
+            str : this.toString()
+        }
     }
     
 }
