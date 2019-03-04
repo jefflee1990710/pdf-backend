@@ -573,6 +573,21 @@ describe('Lexer', () => {
         })
     })
 
+    describe('#getStream', () => {
+        it('can read sample stream', () => {
+            let strbuf = [
+                "stream",
+                Buffer.from([0x01, 0x02, 0x03, 0x04]).toString(config.get('pdf.encoding')),
+                "endstream"
+            ]
+            let reader = new ByteArrayReader(Buffer.from(strbuf.join("\n"), pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let {val} = lexer.getStream()
+            expect(val).to.deep.eq( Buffer.from([0x01, 0x02, 0x03, 0x04]))
+        })
+    })
+
     describe('#getObj', () => {
         it('can read PostScript syntax for integer or boolean', () => {
             let numbers = ['123', '43445', '+17', '-98', '0'];

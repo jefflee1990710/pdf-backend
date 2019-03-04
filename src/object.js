@@ -109,3 +109,10 @@ export class PDFDict extends PDFObject{
     }
 
 }
+
+export class PDFStream extends PDFObject{
+
+    constructor(val){
+        super(val)
+    }
+}

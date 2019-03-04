@@ -12,7 +12,8 @@ import {
     PDFOctalBytes,
     PDFArray,
     PDFDictEntry,
-    PDFDict
+    PDFDict,
+    PDFStream
 } from './object'
 import logger from './logger'
 
@@ -557,8 +558,44 @@ export default class Lexer {
                 logger.warn("Invalid dict entry found!")
             }
         }
+    }
 
-        
+    getStream(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
+
+        let startCmd = this.getCmd(ch, "stream")
+        if(!startCmd){
+            this.restorePosition(addr)
+            return null
+        }
+
+        this.getSpace()
+
+        let streamBuf = []
+        while(true){
+            ch = this.nextChar()
+
+            if(ch === null){
+                this.restorePosition(addr)
+                return null
+            }
+
+            let spaceFound = this.getSpace(ch)
+            if(spaceFound){
+                let endCmd = this.getCmd(ch, "endstream")
+                if(endCmd){
+                    this.cleanSavedPosition(addr)
+                    return new PDFStream(Buffer.from(streamBuf)) 
+                }
+            }
+
+            streamBuf.push(ch)
+        }
     }
 
 }
