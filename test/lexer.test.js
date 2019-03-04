@@ -83,6 +83,19 @@ describe('Lexer', () => {
         })
     })
 
+    describe("#getNull", () => {
+        it('can read null by keyword', () => {
+            let reader = new ByteArrayReader(Buffer.from(' null ', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfobj = lexer.getNull()
+            let {val} = pdfobj
+            expect(pdfobj.constructor.name).equal('PDFNull')
+            expect(val).equal(null);
+            expect(stream.position).equal(5)
+        })
+    })
+
     describe('#getBoolean', () => {
         it('can read true from stream', () => {
             let reader = new ByteArrayReader(Buffer.from(' true', pdfEncoding))

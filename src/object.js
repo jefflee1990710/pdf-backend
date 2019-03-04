@@ -22,6 +22,13 @@ export class PDFLineBreak extends PDFObject{
     }
 }
 
+export class PDFNull extends PDFObject{
+
+    constructor(val){
+        super(val)
+    }
+}
+
 export class PDFBoolean extends PDFObject{
 
     constructor(val){

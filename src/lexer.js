@@ -14,7 +14,8 @@ import {
     PDFDictEntry,
     PDFDict,
     PDFStream,
-    PDFLineBreak
+    PDFLineBreak,
+    PDFNull
 } from './object'
 import logger from './logger'
 
@@ -163,6 +164,25 @@ export default class Lexer {
             cnt ++
         }
 
+    }
+
+    getNull(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
+
+        let found = this.getCmd(ch, "null")
+
+        if(found){
+            this.cleanSavedPosition(addr)
+            return new PDFNull(null)
+        }else{
+            this.restorePosition(addr)
+            return null
+        }
     }
 
     getBoolean(prevCh){
