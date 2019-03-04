@@ -168,4 +168,8 @@ export default class BufferStream {
         delete this.savedPosition[addr]
     }
 
+    moveTo(offset){
+        this.lastPosition = this.position
+        this.position = offset
+    }
 }
