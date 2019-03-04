@@ -19,6 +19,7 @@
   "scripts": {
     "start": "npx babel-node index.js",
     "test": "npx mocha --require babel-core/register",
+    "nyc" : "nyc mocha --require babel-core/register",
     "lint": "eslint src/*.js"
   }
 }

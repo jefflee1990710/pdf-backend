@@ -5,7 +5,6 @@ import {ByteArrayReader} from '../src/reader'
 import Lexer from "../src/lexer";
 import config from 'config'
 import {expect} from 'chai'
-import { O_TRUNC } from "constants";
 
 let pdfEncoding = config.get('pdf.encoding')
 
@@ -53,6 +52,33 @@ describe('Lexer', () => {
             let lexer = new Lexer(stream)
             let pdfobj = lexer.getSpace()
             expect(pdfobj.constructor.name).equal('PDFSpace')
+            expect(stream.position).equal(1)
+        })
+    })
+
+    describe('#getLineBreak', () => {
+        it('can read \\r\\n', () => {
+            let reader = new ByteArrayReader(Buffer.from('\r\n', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfobj = lexer.getLineBreak()
+            expect(pdfobj.constructor.name).equal('PDFLineBreak')
+            expect(stream.position).equal(2)
+        })
+        it('can read \\r', () => {
+            let reader = new ByteArrayReader(Buffer.from('\r', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfobj = lexer.getLineBreak()
+            expect(pdfobj.constructor.name).equal('PDFLineBreak')
+            expect(stream.position).equal(1)
+        })
+        it('can read \\n', () => {
+            let reader = new ByteArrayReader(Buffer.from('\n', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfobj = lexer.getLineBreak()
+            expect(pdfobj.constructor.name).equal('PDFLineBreak')
             expect(stream.position).equal(1)
         })
     })
@@ -584,7 +610,19 @@ describe('Lexer', () => {
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let {val} = lexer.getStream()
-            expect(val).to.deep.eq( Buffer.from([0x01, 0x02, 0x03, 0x04]))
+            expect(val).to.deep.eq(Buffer.from([0x01, 0x02, 0x03, 0x04]))
+        })
+        it('can read empty stream', () => {
+            let strbuf = [
+                "stream",
+                Buffer.from([]).toString(config.get('pdf.encoding')),
+                "endstream"
+            ]
+            let reader = new ByteArrayReader(Buffer.from(strbuf.join("\n"), pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let {val} = lexer.getStream()
+            expect(val).to.deep.eq( Buffer.from([]))
         })
     })
 

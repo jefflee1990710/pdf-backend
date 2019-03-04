@@ -13,7 +13,8 @@ import {
     PDFArray,
     PDFDictEntry,
     PDFDict,
-    PDFStream
+    PDFStream,
+    PDFLineBreak
 } from './object'
 import logger from './logger'
 
@@ -116,6 +117,27 @@ export default class Lexer {
             return new PDFSpace(buff.toString(config.get('pdf.encoding')))
         }
         return null
+    }
+
+    getLineBreak(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+        if(ch === 0x0D){
+            ch = this.nextChar()
+            if(ch === 0x0D){
+                this.cleanSavedPosition(addr)
+                return new PDFLineBreak()
+            }else{
+                this.cleanSavedPosition(addr)
+                return new PDFLineBreak()
+            }
+        }else if(ch === 0x0A){
+            this.cleanSavedPosition(addr)
+            return new PDFLineBreak()
+        }else{
+            this.restorePosition(addr)
+            return null
+        }
     }
 
     getCmd(prevCh, cmd){
@@ -572,29 +594,32 @@ export default class Lexer {
         if(!startCmd){
             this.restorePosition(addr)
             return null
+        }else{
+            ch = this.nextChar()
         }
 
-        this.getSpace()
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
 
         let streamBuf = []
         while(true){
-            ch = this.nextChar()
+
+            this.getLineBreak(ch)
+
+            let endCmd = this.getCmd(ch, "endstream")
+            if(endCmd){
+                this.cleanSavedPosition(addr)
+                return new PDFStream(Buffer.from(streamBuf)) 
+            }
 
             if(ch === null){
                 this.restorePosition(addr)
                 return null
             }
 
-            let spaceFound = this.getSpace(ch)
-            if(spaceFound){
-                let endCmd = this.getCmd(ch, "endstream")
-                if(endCmd){
-                    this.cleanSavedPosition(addr)
-                    return new PDFStream(Buffer.from(streamBuf)) 
-                }
-            }
-
             streamBuf.push(ch)
+            ch = this.nextChar()
         }
     }
 

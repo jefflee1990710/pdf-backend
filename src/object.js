@@ -15,6 +15,13 @@ export class PDFSpace extends PDFObject{
     }
 }
 
+export class PDFLineBreak extends PDFObject{
+
+    constructor(val){
+        super(val)
+    }
+}
+
 export class PDFBoolean extends PDFObject{
 
     constructor(val){
