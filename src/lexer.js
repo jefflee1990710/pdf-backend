@@ -11,7 +11,8 @@ import {
     PDFName,
     PDFOctalBytes,
     PDFArray,
-    PDFDictEntry
+    PDFDictEntry,
+    PDFDict
 } from './object'
 import logger from './logger'
 
@@ -419,7 +420,7 @@ export default class Lexer {
             ch = this.nextChar()
         }
 
-        let fnl = [this.getName, this.getLiteralString, this.getHexadecimalString, this.getArray, this.getReal]
+        let fnl = [this.getName, this.getDict, this.getArray, this.getLiteralString, this.getHexadecimalString, this.getReal]
         for(let i in fnl){
             let fn = fnl[i]
             let value = fn.apply(this, [ch])
@@ -479,7 +480,7 @@ export default class Lexer {
             ch = this.nextChar()
         }
 
-        let fnl = [this.getName, this.getLiteralString, this.getHexadecimalString, this.getArray, this.getReal]
+        let fnl = [this.getName, this.getDict, this.getArray, this.getLiteralString, this.getHexadecimalString, this.getReal]
         for(let i in fnl){
             let fn = fnl[i]
             let value = fn.apply(this, [ch])
@@ -539,7 +540,25 @@ export default class Lexer {
             return null
         }
 
+        let entries = []
+        while(true){
+            ch = this.nextChar()
 
+            let endCmd = this.getCmd(ch, ">>")
+            if(endCmd){
+                this.cleanSavedPosition(addr)
+                return new PDFDict(entries)
+            }
+
+            let entry = this.getDictEntry(ch)
+            if(entry){
+                entries.push(entry)
+            }else{
+                logger.warn("Invalid dict entry found!")
+            }
+        }
+
+        
     }
 
 }

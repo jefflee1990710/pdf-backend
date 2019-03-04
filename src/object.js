@@ -1,83 +1,111 @@
-export class PDFSpace {
-
+export class PDFObject {
     constructor(val){
         this.val = val
+    }
+
+    toJson(){
+        return this.val
     }
 }
 
-export class PDFBoolean {
+export class PDFSpace extends PDFObject{
 
     constructor(val){
-        this.val = val
+        super(val)
     }
 }
 
-export class PDFReal {
+export class PDFBoolean extends PDFObject{
 
     constructor(val){
-        this.val = val
+        super(val)
     }
 }
 
-export class PDFCmd {
+export class PDFReal extends PDFObject{
 
     constructor(val){
-        this.val = val
+        super(val)
     }
 }
 
-export class PDFOctalBytes {
+export class PDFCmd extends PDFObject{
 
     constructor(val){
-        this.val = val
+        super(val)
     }
 }
 
-export class PDFString {
+export class PDFOctalBytes extends PDFObject{
 
     constructor(val){
-        this.val = val
+        super(val)
     }
 }
 
-export class PDFLiteralString {
+export class PDFString extends PDFObject{
 
     constructor(val){
-        this.val = val
+        super(val)
     }
 }
 
-export class PDFHexadecimalString {
+export class PDFLiteralString extends PDFObject{
 
     constructor(val){
-        this.val = val
+        super(val)
     }
 }
 
-export class PDFName {
+export class PDFHexadecimalString extends PDFObject{
 
     constructor(val){
-        this.val = val
+        super(val)
     }
 }
 
-export class PDFArray {
+export class PDFName extends PDFObject{
 
     constructor(val){
-        this.val = val
+        super(val)
     }
 }
 
-export class PDFDictEntry {
+export class PDFArray extends PDFObject{
 
     constructor(val){
-        this.val = val
+        super(val)
+    }
+
+    toJson(){
+        let arr = []
+        for(let i in this.val){
+            arr.push(this.val[i].toJson())
+        }
+        return arr
     }
 }
 
-export class PDFDict {
+export class PDFDictEntry extends PDFObject{
 
     constructor(val){
-        this.val = val
+        super(val)
     }
+}
+
+export class PDFDict extends PDFObject{
+
+    constructor(val){
+        super(val)
+    }
+
+    toJson(){
+        let obj = {}
+        for(let i in this.val){
+            let {val} = this.val[i]
+            obj[val.fieldname.val] = val.value.toJson()
+        }
+        return obj
+    }
+
 }

@@ -511,17 +511,65 @@ describe('Lexer', () => {
     })
 
     describe('#getDict()', () => {
-        it('can read a simple dict', () => {
+        it('can read a simple dictionary', () => {
             let strbuf = [
-                "<< /Type Example",
+                "<< /Type /Example",
                 "/Version 0.01 >>"
             ]
             let reader = new ByteArrayReader(Buffer.from(strbuf.join("\n"), pdfEncoding))
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfObj = lexer.getDict()
-            let {val} = pdfObj
-            console.log(val)
+            let json = pdfObj.toJson()
+            expect(json['Type']).equal('Example')
+            expect(json['Version']).equal(0.01)
+        })
+        it('can read dictionary with a sub dictionary', () => {
+            let strbuf = [
+                "<< /Type /Example",
+                "/Version 0.01 /Subdictionary <</Item 0.4>> >>"
+            ]
+            let reader = new ByteArrayReader(Buffer.from(strbuf.join("\n"), pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getDict()
+            let json = pdfObj.toJson()
+            expect(json['Type']).equal('Example')
+        })
+        it('can read dictionary with array', () => {
+            let strbuf = [
+                "<< /Type /Example",
+                "/Version 0.01 /Array [1 2 3 (String here)] >>"
+            ]
+            let reader = new ByteArrayReader(Buffer.from(strbuf.join("\n"), pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getDict()
+            let json = pdfObj.toJson()
+            expect(json['Type']).equal('Example')
+        })
+        it('can read dictionary without space', () => {
+            let strbuf = [
+                "<</Type/Example/Subtype/Button>>"
+            ]
+            let reader = new ByteArrayReader(Buffer.from(strbuf.join("\n"), pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getDict()
+            let json = pdfObj.toJson()
+            expect(json['Type']).equal('Example')
+        })
+        it('can read dictionary with a sub dictionary', () => {
+            let strbuf = [
+                "<< /Type /Example",
+                "/Version 0.01 /Subdictionary <</Item 0.4 /Subitem <</Integer 1/String (Ok here)>>>>>>"
+            ]
+            let reader = new ByteArrayReader(Buffer.from(strbuf.join("\n"), pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getDict()
+            let json = pdfObj.toJson()
+            expect(json['Type']).equal('Example')
         })
     })
 
