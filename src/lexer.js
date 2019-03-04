@@ -17,7 +17,9 @@ import {
     PDFLineBreak,
     PDFNull,
     PDFXRefTableSectionHeader,
-    PDFXRefTableSectionEntry
+    PDFXRefTableSectionEntry,
+    PDFXRefTable,
+    PDFIndirectObject
 } from './object'
 import logger from './logger'
 
@@ -690,6 +692,7 @@ export default class Lexer {
             ch = this.nextChar()
         }
 
+        let offset = null
         let offsetBytes = []
         for(let i = 0; i < 10; i ++){
             if(ch != null){
@@ -700,11 +703,19 @@ export default class Lexer {
             }
             ch = this.nextChar()
         }
+        try{
+            offset = parseInt(offsetBytes.join(''))
+        }catch(e){
+            logger.error(e)
+            this.restorePosition(addr)
+            return null
+        }
 
         if(this.getSpace(ch)){
             ch = this.nextChar()
         }
 
+        let generationNumber = null
         let generationBytes = []
         for(let i = 0; i < 5; i ++){
             if(ch != null){
@@ -715,9 +726,22 @@ export default class Lexer {
             }
             ch = this.nextChar()
         }
+        try{
+            generationNumber = parseInt(generationBytes.join(''))
+        }catch(e){
+            logger.error(e)
+            this.restorePosition(addr)
+            return null
+        }
 
         if(this.getSpace(ch)){
             ch = this.nextChar()
+        }
+
+        let flag = String.fromCharCode(ch)
+        if(!(flag === 'f' || flag === 'n')){
+            this.restorePosition(addr)
+            return null
         }
 
         if(ch == null){
@@ -726,14 +750,18 @@ export default class Lexer {
         }
 
         return new PDFXRefTableSectionEntry({
-            offset : parseInt(offsetBytes.join('')), 
-            generationNumber : parseInt(generationBytes.join('')),
-            flag : String.fromCharCode(ch)
+            offset, generationNumber, flag
         })
 
     }
 
     getXRefTable(prevCh){
+        const getNewSectionObj = (header) => {
+            return {
+                header : header,
+                entries : []
+            }
+        }
         let addr = this.savePosition()
         let ch = prevCh || this.nextChar()
 
@@ -741,7 +769,108 @@ export default class Lexer {
             ch = this.nextChar()
         }
 
-         
+        let sections = []
+        let curSectionPtr = -1
+        while(true){
+            
+            let entry = this.getXRefSectionEntry(ch)
+            if(entry){
+                if(sections[curSectionPtr]){
+                    sections[curSectionPtr].entries.push(entry)
+                    ch = this.nextChar()
+                }else{
+                    logger.error('Invalid XRef Table format. Found entry before header.')
+                    this.restorePosition(addr)
+                    return null
+                }
+                continue
+            }
+
+            let header = this.getXRefSectionHeader(ch)
+            if(header){
+                curSectionPtr ++
+                sections[curSectionPtr] = getNewSectionObj(header)
+                ch = this.nextChar()
+                continue
+            }
+
+            if(curSectionPtr < 0){
+                this.restorePosition(addr)
+                return null
+            }else{
+                this.cleanSavedPosition(addr)
+                return new PDFXRefTable({
+                    sections
+                })
+            }
+        }
+    }
+
+    getIndirectObject(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
+
+        let objNum = this.getReal(ch)
+        if(objNum){
+            ch = this.nextChar()
+        }else{
+            logger.warn('Invalid object format. Can\' find object number at expected position.')
+            this.restorePosition(addr)
+            return null
+        }
+
+        let genNum = this.getReal(ch)
+        if(genNum){
+            logger.warn('Invalid object format. Can\' find generation number at expected position.')
+            ch = this.nextChar()
+        }else{
+            this.restorePosition(addr)
+            return null
+        }
+
+        let objCmd = this.getCmd(ch, 'obj')
+        if(objCmd){
+            ch = this.nextChar()
+        }else{
+            logger.warn('Invalid object format. Can\' find keyword "obj" at expected position')
+            this.restorePosition(addr)
+            return null
+        }
+
+        let obj = {
+            objectNumber : objNum,
+            generationNumber : genNum,
+            content : []
+        }
+
+        while(true){
+
+            if(ch === null){
+                this.restorePosition(addr)
+                return null
+            }
+            
+            let endCmd = this.getCmd(ch, "endobj")
+            if(endCmd){
+                this.cleanSavedPosition(addr)
+                return new PDFIndirectObject(obj)
+            }
+
+            let fnl = [this.getStream, this.getDict]
+            for(let f in fnl){
+                let fn = fnl[f]
+                let pdfobj = fn.apply(this, [ch])
+                if(pdfobj){
+                    obj.content.push(pdfobj)
+                }
+            }
+
+            ch = this.nextChar()
+        }
     }
 
 }

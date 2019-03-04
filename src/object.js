@@ -194,3 +194,36 @@ export class PDFXRefTableSectionEntry extends PDFObject {
         }
     }
 }
+
+export class PDFXRefTable extends PDFObject{
+
+    constructor(val){
+        super(val)
+    }
+}
+
+
+export class PDFIndirectObject extends PDFObject{
+
+    constructor(val){
+        super(val)
+    }
+
+    get objectNumber(){
+        return this.val.objectNumber.toJson()
+    }
+
+    get generationNumber(){
+        return this.val.generationNumber.toJson()
+    }
+    
+    toJson(){
+        let content = this.val.content.map((r) => r.toJson())
+        return {
+            objectNumber : this.objectNumber,
+            generationNumber : this.generationNumber,
+            content
+        }
+
+    }
+}

@@ -54,6 +54,10 @@ const hexToAscii = (str1) => {
     }
     return str
 }
+
+const deepCopy = (obj) => {
+    return JSON.parse(JSON.stringify(obj))
+}
   
 export default {
     isNumber, 
@@ -61,5 +65,6 @@ export default {
     isTab,
     isLineBreak,
     readonly,
-    hexToAscii
+    hexToAscii,
+    deepCopy
 }

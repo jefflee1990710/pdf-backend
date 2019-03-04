@@ -683,6 +683,62 @@ describe('Lexer', () => {
             let pdfObj = lexer.getXRefSectionEntry()
             expect(pdfObj).is.eq(null)
         })
+        it('return null if read entry from header', () => {
+            let reader = new ByteArrayReader(Buffer.from("0 6", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getXRefSectionEntry()
+            expect(pdfObj).is.eq(null)
+        })
+    })
+
+    describe('#getXRefTable', () => {
+        it('can retrieve xref table with multi section', () => {
+            let xrefbuffer = [
+                "0 6",
+                "0000000000 65535 f",
+                "0000000019 00000 n",
+                "0000000093 00000 n",
+                "0000000147 00000 n",
+                "0000000222 00000 n",
+                "0000000390 00000 n",
+                "6 3",
+                "0000000450 00000 n",
+                "0000000882 00000 n",
+                "0000000938 00000 n"
+            ]
+            let reader = new ByteArrayReader(Buffer.from(xrefbuffer.join('\n'), pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let {val} = lexer.getXRefTable()
+            expect(val.sections.length).is.eq(2)
+            expect(val.sections[0].entries.length).is.eq(6)
+            expect(val.sections[1].entries.length).is.eq(3)
+            expect(val.sections[0].entries[1].offset).is.eq(19)
+            expect(val.sections[1].entries[1].offset).is.eq(882)
+        })
+        it('return null for unknow stream', () => {
+            let reader = new ByteArrayReader(Buffer.from('random string not xref', pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getXRefTable()
+            expect(pdfObj).is.null
+        })
+    })
+
+    describe('#getIndirectObject', () => {
+        it('read normal dictionary object', () => {
+            let buffer = [
+                "1 0 obj",
+                "<< /Type /Catalog /Count 2 >>",
+                "endobj"
+            ]
+            let reader = new ByteArrayReader(Buffer.from(buffer.join('\n'), pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getIndirectObject()
+            console.log(pdfObj.toJson())
+        })
     })
 
     describe('#getObj', () => {
