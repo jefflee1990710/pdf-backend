@@ -737,7 +737,23 @@ describe('Lexer', () => {
             let stream = new BufferStream(reader)
             let lexer = new Lexer(stream)
             let pdfObj = lexer.getIndirectObject()
-            console.log(pdfObj.toJson())
+            let {val} = pdfObj
+            expect(pdfObj.constructor.name).is.eq('PDFIndirectObject')
+            expect(pdfObj.objectNumber).is.eq(1)
+            expect(pdfObj.generationNumber).is.eq(0)
+            expect(val.content.length).is.eq(1)
+        })
+    })
+
+    describe('#getObjectReference', () => {
+        it('read correct object reference', () => {
+            let reader = new ByteArrayReader(Buffer.from("1 0 R", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getObjectReference()
+            expect(pdfObj.constructor.name).is.eq('PDFObjectReference')
+            expect(pdfObj.objectNumber).is.eq(1)
+            expect(pdfObj.generationNumber).is.eq(0)
         })
     })
 

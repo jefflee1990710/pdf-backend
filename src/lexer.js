@@ -19,7 +19,8 @@ import {
     PDFXRefTableSectionHeader,
     PDFXRefTableSectionEntry,
     PDFXRefTable,
-    PDFIndirectObject
+    PDFIndirectObject,
+    PDFObjectReference
 } from './object'
 import logger from './logger'
 
@@ -825,9 +826,9 @@ export default class Lexer {
 
         let genNum = this.getReal(ch)
         if(genNum){
-            logger.warn('Invalid object format. Can\' find generation number at expected position.')
             ch = this.nextChar()
         }else{
+            logger.warn('Invalid object format. Can\' find generation number at expected position.')
             this.restorePosition(addr)
             return null
         }
@@ -871,6 +872,47 @@ export default class Lexer {
 
             ch = this.nextChar()
         }
+    }
+
+    getObjectReference(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
+
+        let objNum = this.getReal(ch)
+        if(objNum){
+            ch = this.nextChar()
+        }else{
+            logger.warn('Invalid object format. Can\' find object number at expected position.')
+            this.restorePosition(addr)
+            return null
+        }
+
+        let genNum = this.getReal(ch)
+        if(genNum){
+            ch = this.nextChar()
+        }else{
+            logger.warn('Invalid object format. Can\' find generation number at expected position.')
+            this.restorePosition(addr)
+            return null
+        }
+
+        let objCmd = this.getCmd(ch, 'R')
+        if(objCmd){
+            this.cleanSavedPosition(addr)
+                return new PDFObjectReference({
+                    objectNumber : objNum,
+                    generationNumber : genNum
+                })
+        }else{
+            logger.warn('Invalid object format. Can\' find keyword "obj" at expected position')
+            this.restorePosition(addr)
+            return null
+        }
+
     }
 
 }

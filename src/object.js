@@ -227,3 +227,19 @@ export class PDFIndirectObject extends PDFObject{
 
     }
 }
+
+export class PDFObjectReference extends PDFObject{
+    
+    constructor(val){
+        super(val)
+    }
+    
+    get objectNumber(){
+        return this.val.objectNumber.toJson()
+    }
+
+    get generationNumber(){
+        return this.val.generationNumber.toJson()
+    }
+    
+}
