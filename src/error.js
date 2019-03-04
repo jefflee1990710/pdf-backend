@@ -14,14 +14,6 @@ export class InvalidPDFFormatError extends Error {
     }
 }
 
-export class FormattedObjectNotFillError extends Error {
-    constructor(...args){
-        super(...args)
-        Error.captureStackTrace(this, FormattedObjectNotFillError)
-        this.name = "FormattedObjectNotFillError"
-    }
-}
-
 export class RestorePositionError extends Error {
     constructor(...args){
         super(...args)

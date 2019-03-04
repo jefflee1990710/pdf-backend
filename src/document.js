@@ -1,12 +1,23 @@
 import {FileReader} from './reader'
 import {InvalidPDFFormatError} from './error'
 import Lexer from './lexer'
+import logger from './logger';
 
 export class PDFDocument {
 
     loadFromFile(path){
         this.reader = new FileReader(path)
         this.bufferStream = this.reader.toStream()
+        this.load()
+    }
+
+    load(){
+        try{
+            let startXRef = this.startXRef
+        }catch(e){
+            logger.error(e)
+            throw new InvalidPDFFormatError()
+        }
     }
 
     get startXRef(){
@@ -24,6 +35,10 @@ export class PDFDocument {
         }else{
             throw new InvalidPDFFormatError('Invalid PDF Format - Keyword "startxref" not found in the PDF file.')
         }
+    }
+
+    readXref(offset){
+
     }
 
 }

@@ -105,6 +105,21 @@ export class PDFDictEntry extends PDFObject{
     constructor(val){
         super(val)
     }
+
+    get fieldname(){
+        return this.val['fieldname']
+    }
+
+    get value(){
+        return this.val['value']
+    }
+
+    toJson(){
+        return {
+            fieldname : this.fieldname,
+            value : this.value
+        }
+    }
 }
 
 export class PDFDict extends PDFObject{
@@ -128,5 +143,54 @@ export class PDFStream extends PDFObject{
 
     constructor(val){
         super(val)
+    }
+}
+
+export class PDFXRefTableSectionHeader extends PDFObject {
+
+    constructor(val){
+        super(val)
+    }
+
+    get firstObjectNum(){
+        return this.val['firstObjectNum']
+    }
+
+    get objectCnt(){
+        return this.val['objectCnt']
+    }
+
+    toJson(){
+        return {
+            firstObjectNum : this.firstObjectNum,
+            objectCnt : this.objectCnt
+        }
+    }
+}
+
+export class PDFXRefTableSectionEntry extends PDFObject {
+
+    constructor(val){
+        super(val)
+    }
+
+    get offset(){
+        return this.val['offset']
+    }
+
+    get generationNumber() {
+        return this.val['generationNumber']
+    }
+
+    get flag(){
+        return this.val['flag']
+    }
+
+    toJson(){
+        return {
+            offset : this.offset,
+            generationNumber : this.generationNumber,
+            flag : this.flag
+        }
     }
 }

@@ -27,15 +27,22 @@ export default class BufferStream {
         this.savedPosition = {}
     }
 
-    /**
-     * Retrieve one byte
-     */
     getByte(){
         if(!this.hasNext()){
             return null
         }
         this.lastPosition = this.position
         return this.reader.getByte(this.position ++)
+    }
+
+    getBytes(length){
+        if(!this.hasNext()){
+            return null
+        }
+        this.lastPosition = this.position
+        let r = this.reader.getBytes(this.position, length)
+        this.position = this.position + length
+        return r
     }
 
     skip(length = 0){

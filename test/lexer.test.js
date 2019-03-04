@@ -639,6 +639,52 @@ describe('Lexer', () => {
         })
     })
 
+    describe('#getXRefSectionHeader', () => {
+        it('can read simple xref table section header', () => {
+            let reader = new ByteArrayReader(Buffer.from(" 28 5 ", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let {val} = lexer.getXRefSectionHeader()
+            expect(val.firstObjectNum).eq(28)
+            expect(val.objectCnt).eq(5)
+        })
+        it('return null for invalid header', () => {
+            let reader = new ByteArrayReader(Buffer.from(" 28 a ", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getXRefSectionHeader()
+            expect(pdfObj).is.eq(null)
+        })
+    })
+
+    describe('#getXRefSectionEntry', () => {
+        it('can read simple entry in xref table (free entry)', () => {
+            let reader = new ByteArrayReader(Buffer.from(" 0000000000 65535 f ", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let {val} = lexer.getXRefSectionEntry()
+            expect(val.offset).is.eq(0)
+            expect(val.generationNumber).is.eq(65535)
+            expect(val.flag).is.eq('f')
+        })
+        it('can read simple entry in xref table', () => {
+            let reader = new ByteArrayReader(Buffer.from(" 0000000147 00000 n ", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let {val} = lexer.getXRefSectionEntry()
+            expect(val.offset).is.eq(147)
+            expect(val.generationNumber).is.eq(0)
+            expect(val.flag).is.eq('n')
+        })
+        it('return null for invalid entry', () => {
+            let reader = new ByteArrayReader(Buffer.from(" 0000000147", pdfEncoding))
+            let stream = new BufferStream(reader)
+            let lexer = new Lexer(stream)
+            let pdfObj = lexer.getXRefSectionEntry()
+            expect(pdfObj).is.eq(null)
+        })
+    })
+
     describe('#getObj', () => {
         it('can read PostScript syntax for integer or boolean', () => {
             let numbers = ['123', '43445', '+17', '-98', '0'];

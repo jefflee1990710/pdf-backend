@@ -15,7 +15,9 @@ import {
     PDFDict,
     PDFStream,
     PDFLineBreak,
-    PDFNull
+    PDFNull,
+    PDFXRefTableSectionHeader,
+    PDFXRefTableSectionEntry
 } from './object'
 import logger from './logger'
 
@@ -70,6 +72,10 @@ export default class Lexer {
     
     nextChar(){
         return this.stream.getByte()
+    }
+
+    nextChars(length){
+        return this.stream.getBytes(length)
     }
 
     peekChar(){
@@ -641,6 +647,101 @@ export default class Lexer {
             streamBuf.push(ch)
             ch = this.nextChar()
         }
+    }
+
+    getXRefSectionHeader(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
+
+        let firstObjectNum = this.getReal(ch)
+        if(!firstObjectNum){
+            this.restorePosition(addr)
+            return null
+        }else{
+            ch = this.nextChar()
+        }
+
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
+
+        let objectCnt = this.getReal(ch)
+        if(!objectCnt){
+            this.restorePosition(addr)
+            return null
+        }else{
+            this.cleanSavedPosition(addr)
+            return new PDFXRefTableSectionHeader({
+                firstObjectNum : firstObjectNum.val, 
+                objectCnt : objectCnt.val
+            })
+        }
+    }
+
+    getXRefSectionEntry(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
+
+        let offsetBytes = []
+        for(let i = 0; i < 10; i ++){
+            if(ch != null){
+                offsetBytes.push(String.fromCharCode(ch))
+            }else{
+                this.restorePosition(addr)
+                return null
+            }
+            ch = this.nextChar()
+        }
+
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
+
+        let generationBytes = []
+        for(let i = 0; i < 5; i ++){
+            if(ch != null){
+                generationBytes.push(String.fromCharCode(ch))
+            }else{
+                this.restorePosition(addr)
+                return null
+            }
+            ch = this.nextChar()
+        }
+
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
+
+        if(ch == null){
+            this.restorePosition(addr)
+            return null
+        }
+
+        return new PDFXRefTableSectionEntry({
+            offset : parseInt(offsetBytes.join('')), 
+            generationNumber : parseInt(generationBytes.join('')),
+            flag : String.fromCharCode(ch)
+        })
+
+    }
+
+    getXRefTable(prevCh){
+        let addr = this.savePosition()
+        let ch = prevCh || this.nextChar()
+
+        if(this.getSpace(ch)){
+            ch = this.nextChar()
+        }
+
+         
     }
 
 }
