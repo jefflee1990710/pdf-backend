@@ -27,32 +27,30 @@ export default class BufferStream {
         this.savedPosition = {}
     }
 
+    _getPositionAndAdd(num){
+        this.lastPosition = this.position
+        this.position = this.position + num
+        return this.lastPosition;
+    }
+
     getByte(){
         if(!this.hasNext()){
+            this._getPositionAndAdd(1)
             return null
         }
         this.lastPosition = this.position
-        return this.reader.getByte(this.position ++)
+        return this.reader.getByte(this._getPositionAndAdd(1))
     }
 
     getBytes(length){
         if(!this.hasNext()){
+            this._getPositionAndAdd(length)
             return null
         }
-        this.lastPosition = this.position
-        let r = this.reader.getBytes(this.position, length)
-        this.position = this.position + length
+        let r = this.reader.getBytes(this._getPositionAndAdd(length), length)
         return r
     }
 
-    skip(length = 0){
-        if(!this.hasNext()){
-            return null
-        }
-        this.lastPosition = this.position
-        this.position += length
-    }
-    
     /**
      * Peek a byte forward and don't change the pointer position
      */
@@ -168,9 +166,15 @@ export default class BufferStream {
         }
         this.position = this.savedPosition[addr]
         this.savedPosition[addr] = null
+        this.cleanPosition(addr)
     }
 
     cleanSavedPosition(addr){
+        this.savedPosition[addr] = null
+        delete this.savedPosition[addr]
+    }
+
+    cleanPosition(addr){
         this.savedPosition[addr] = null
         delete this.savedPosition[addr]
     }

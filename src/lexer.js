@@ -20,7 +20,8 @@ import {
     PDFXRefTableSectionEntry,
     PDFXRefTable,
     PDFIndirectObject,
-    PDFObjectReference
+    PDFObjectReference,
+    PDFTrailer
 } from './object'
 import logger from './logger'
 
@@ -58,10 +59,13 @@ export default class Lexer {
     }
 
     savePosition(){
+        this.savedCurrentChar = this.currentChar
         return this.stream.savePosition()
     }
 
     restorePosition(addr){
+        this.lastChar = this.currentChar
+        this.currentChar = this.savedCurrentChar
         this.stream.restorePosition(addr)
     }
 
@@ -70,15 +74,13 @@ export default class Lexer {
     }
 
     rewindPosition(){
+        this.currentChar = this.lastChar
         this.stream.rewindPosition()
     }
     
     nextChar(){
-        return this.stream.getByte()
-    }
-
-    nextChars(length){
-        return this.stream.getBytes(length)
+        this.lastChar = this.currentChar
+        return (this.currentChar = this.stream.getByte())
     }
 
     peekChar(){
@@ -87,7 +89,7 @@ export default class Lexer {
 
     getObj(prevCh, ...objectTypes){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
         let fnl = []
         if(objectTypes.length === 0){
@@ -100,7 +102,7 @@ export default class Lexer {
         }
         for(let i in fnl){
             let fn = fnl[i]
-            let value = fn.apply(this, [ch])
+            let value = fn.apply(this, [this.currentChar])
             if(value) {
                 this.cleanSavedPosition(addr)
                 return value
@@ -112,36 +114,40 @@ export default class Lexer {
 
     getSpace(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
         
         let buff = [] 
-        while(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch)){
-            buff.push(ch)
-            ch = this.nextChar()
-            if(!(helper.isLineBreak(ch) || helper.isSpace(ch) || helper.isTab(ch))){
+        while(true){
+            buff.push(this.currentChar)
+            if(helper.isLineBreak(this.currentChar) || helper.isSpace(this.currentChar) || helper.isTab(this.currentChar)){
+                this.nextChar()
+            }else{
                 this.rewindPosition()
+                break;
             }
         }
-        this.cleanSavedPosition(addr)
         if(buff.length > 0){
+            this.cleanSavedPosition(addr)
             return new PDFSpace(buff.toString(config.get('pdf.encoding')))
+        }else{
+            this.restorePosition(addr)
+            return null
         }
-        return null
     }
 
     getLineBreak(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
-        if(ch === 0x0D){
-            ch = this.nextChar()
-            if(ch === 0x0D){
+        this.currentChar = prevCh || this.nextChar()
+        if(this.currentChar === 0x0D){
+            this.currentChar = this.nextChar()
+            if(this.currentChar === 0x0D){
                 this.cleanSavedPosition(addr)
                 return new PDFLineBreak()
             }else{
                 this.cleanSavedPosition(addr)
                 return new PDFLineBreak()
             }
-        }else if(ch === 0x0A){
+        }else if(this.currentChar === 0x0A){
             this.cleanSavedPosition(addr)
             return new PDFLineBreak()
         }else{
@@ -152,16 +158,21 @@ export default class Lexer {
 
     getCmd(prevCh, cmd){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        console.log("getcmd space start", this.stream.position, String.fromCharCode(this.currentChar))
+
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
+
+        console.log("getcmd space end", this.stream.position, String.fromCharCode(this.currentChar))
+
 
         let cmdBuf = Buffer.from(cmd, config.get("pdf.encoding"))
         let cnt = 0
         while(true){
-            if(ch !== cmdBuf[cnt]){
+            if(this.currentChar !== cmdBuf[cnt]){
                 this.restorePosition(addr)
                 return null
             }
@@ -169,7 +180,7 @@ export default class Lexer {
                 this.cleanSavedPosition(addr)
                 return new PDFCmd(cmd)
             }
-            ch = this.nextChar()
+            this.currentChar = this.nextChar()
             cnt ++
         }
 
@@ -177,13 +188,13 @@ export default class Lexer {
 
     getNull(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
-        let found = this.getCmd(ch, "null")
+        let found = this.getCmd(this.currentChar, "null")
 
         if(found){
             this.cleanSavedPosition(addr)
@@ -196,10 +207,10 @@ export default class Lexer {
 
     getBoolean(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
         
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
         let choices = [{
@@ -212,7 +223,9 @@ export default class Lexer {
         
         for(let c in choices){
             let choice = choices[c]
-            let found = this.getCmd(ch, choice.cmd)
+            console.log('Find boolean at', this.stream.position, String.fromCharCode(this.currentChar))
+            let found = this.getCmd(this.currentChar, choice.cmd)
+            console.log("found", found)
             if(found){
                 this.cleanSavedPosition(addr)
                 return choice.value
@@ -225,23 +238,23 @@ export default class Lexer {
 
     getReal(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
         
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
         let sign = 1
-        if(ch === 0x2D){ // - sign
+        if(this.currentChar === 0x2D){ // - sign
             sign = -1
-            ch = this.nextChar()
-        }else if(ch === 0x2B){ // + sign
+            this.currentChar = this.nextChar()
+        }else if(this.currentChar === 0x2B){ // + sign
             sign = 1
-            ch = this.nextChar()
+            this.currentChar = this.nextChar()
         }
 
         // If next comming byte is not number
-        if(!helper.isNumber(ch) && ch !== 0x2E){ // Not number and "."
+        if(!helper.isNumber(this.currentChar) && this.currentChar !== 0x2E){ // Not number and "."
             this.restorePosition(addr)
             return null;
         }
@@ -250,20 +263,20 @@ export default class Lexer {
         let tail = []
         let scanningHead = true
         while(true){
-            if(ch === 0x2E){ // .
+            if(this.currentChar === 0x2E){ // .
                 scanningHead = false
-                ch = this.nextChar()
+                this.currentChar = this.nextChar()
                 continue
-            }else if(helper.isNumber(ch)){
+            }else if(helper.isNumber(this.currentChar)){
                 if(scanningHead){
-                    head.push(ch)
+                    head.push(this.currentChar)
                 }else{
-                    tail.push(ch)
+                    tail.push(this.currentChar)
                 }
             }
 
-            if(!helper.isNumber(ch) || ch === null){
-                if(ch != null){
+            if(!helper.isNumber(this.currentChar) || this.currentChar === null){
+                if(this.currentChar != null){
                     this.rewindPosition()
                 }
                 if(head.length > 0){
@@ -281,20 +294,20 @@ export default class Lexer {
                 }
             }
 
-            ch = this.nextChar()
+            this.currentChar = this.nextChar()
         }
     }
 
     getOctal(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
-        if(ch === 0x5C){
-            let ch1 = this.nextChar()
+        if(this.currentChar === 0x5C){
+            let ch1 = this.nextChar() // Should use this.currentChar, need to rewrite
             let ch2 = this.nextChar()
             let ch3 = this.peekChar()
             if(helper.isNumber(ch1) && helper.isNumber(ch2)){
@@ -322,13 +335,13 @@ export default class Lexer {
 
     getStringObject(prevCh, startBy, closeBy){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
-        let openingCmd = this.getCmd(ch, startBy)
+        let openingCmd = this.getCmd(this.currentChar, startBy)
         if(!openingCmd){
             this.restorePosition(addr)
             return null
@@ -338,31 +351,34 @@ export default class Lexer {
         let parenCnt = 0;
 
         while(true){
-            ch = this.nextChar()
+            this.currentChar = this.nextChar()
             
-            if(String.fromCharCode(ch) === closeBy && parenCnt === 0){
+            if(String.fromCharCode(this.currentChar) === closeBy && parenCnt === 0){
                 this.cleanSavedPosition(addr)
                 return new PDFString(stringBuffer.join(''))
             }else{
-                if(ch === 0x28){ // (
+                if(this.currentChar === 0x28){ // (
                     parenCnt ++
-                }else if(ch === 0x29){ // )
+                }else if(this.currentChar === 0x29){ // )
                     parenCnt --
                 }
                 // Check octla
-                let octalCode = this.getOctal(ch)
-                if(octalCode){
-                    stringBuffer.push(octalCode.val)
-                } else if(ch === 0x5C){ // Check escape
-                    ch = this.nextChar()
-                    switch(ch){
+
+                // let octalCode = this.getOctal(this.currentChar)
+                // console.log('octalCode found', 'position', this.stream.position)
+                // if(octalCode){
+                //     stringBuffer.push(octalCode.val)
+                // } else 
+                if(this.currentChar === 0x5C){ // Check escape
+                    this.currentChar = this.nextChar()
+                    switch(this.currentChar){
                         case 0x0A:
                             stringBuffer.concat('\\n')
                             break;
                         case 0x0D:
                             stringBuffer.concat('\\r')
                             if(this.peekChar() === 0x0A){
-                                ch = this.nextChar()
+                                this.currentChar = this.nextChar()
                                 stringBuffer.concat('\\n')
                             }
                             break;
@@ -385,12 +401,12 @@ export default class Lexer {
                             stringBuffer.concat('\\')
                             break;
                         default:
-                            console.warn('Not found', ch);
+                            console.warn('Not found', this.currentChar);
                             break
                             // Ignore if not in table 3 in page 13 of PDF32000_2008.pdf 
                     }
                 }else{
-                    stringBuffer.push(String.fromCharCode(ch))
+                    stringBuffer.push(String.fromCharCode(this.currentChar))
                 }
             }
         }
@@ -422,13 +438,13 @@ export default class Lexer {
 
     getName(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
-        let nameCmd = this.getCmd(ch, "/")
+        let nameCmd = this.getCmd(this.currentChar, "/")
         if(!nameCmd){
             this.restorePosition(addr)
             return null
@@ -436,9 +452,9 @@ export default class Lexer {
 
         let nameArr = []
         while(true){
-            ch = this.nextChar()
+            this.currentChar = this.nextChar()
     
-            if(ch === null || (specialChars[ch] > 0) || (ch < 0x21 || ch > 0x7E)){
+            if(this.currentChar === null || (specialChars[this.currentChar] > 0) || (this.currentChar < 0x21 || this.currentChar > 0x7E)){
                 if(nameArr.length > 0){
                     this.rewindPosition()
                     this.cleanSavedPosition(addr)
@@ -449,16 +465,16 @@ export default class Lexer {
                 }
             }
 
-            if(ch === 0x23){ // "#"
+            if(this.currentChar === 0x23){ // "#"
                 let hexArr = []
-                ch = this.nextChar()
-                hexArr.push(ch)
-                ch = this.nextChar()
-                hexArr.push(ch)
+                this.currentChar = this.nextChar()
+                hexArr.push(this.currentChar)
+                this.currentChar = this.nextChar()
+                hexArr.push(this.currentChar)
                 let hexStr = Buffer.from(hexArr).toString(config.get('pdf.encoding'))
                 nameArr.push(helper.hexToAscii(hexStr))
             }else{
-                nameArr.push(String.fromCharCode(ch))
+                nameArr.push(String.fromCharCode(this.currentChar))
             }
         }
 
@@ -466,16 +482,17 @@ export default class Lexer {
 
     getArrayElement(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
         let fnl = [this.getName, this.getObjectReference, this.getDict, this.getArray, this.getLiteralString, this.getHexadecimalString, this.getReal]
         for(let i in fnl){
             let fn = fnl[i]
-            let value = fn.apply(this, [ch])
+            console.log('Trying ', fn.name, ' at ', this.stream.position, " char", String.fromCharCode(this.currentChar))
+            let value = fn.apply(this, [this.currentChar])
             if(value) {
                 this.cleanSavedPosition(addr)
                 return value
@@ -487,55 +504,55 @@ export default class Lexer {
 
     getArray(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
-        let arrayCmd = this.getCmd(ch, "[")
+        let arrayCmd = this.getCmd(this.currentChar, "[")
         if(!arrayCmd){
             this.restorePosition(addr)
             return null
         }
 
         // Loop and file all element
-        ch = this.nextChar()
+        this.currentChar = this.nextChar()
         let result = []
         while(true){
-            if(ch === null){
+            if(this.currentChar === null){
                 this.restorePosition(addr)
                 return null
             }
 
-            let endCmd = this.getCmd(ch, "]")
+            let endCmd = this.getCmd(this.currentChar, "]")
             if(endCmd){
                 this.cleanSavedPosition(addr)
                 return new PDFArray(result)
             }
  
-            let foundElem = this.getArrayElement(ch)
+            let foundElem = this.getArrayElement(this.currentChar)
             if(!foundElem){
-                logger.warn("invalidate element found in the array")
+                logger.warn("invalidate element found in the array at position " + (this.stream.position - 1))
             }else{
                 result.push(foundElem)
             }
-            ch = this.nextChar()
+            this.currentChar = this.nextChar()
         }
     }
 
     getDictValue(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
         let fnl = [this.getName, this.getObjectReference, this.getDict, this.getArray, this.getLiteralString, this.getHexadecimalString, this.getReal]
         for(let i in fnl){
             let fn = fnl[i]
-            let value = fn.apply(this, [ch])
+            let value = fn.apply(this, [this.currentChar])
             if(value) {
                 this.cleanSavedPosition(addr)
                 return value
@@ -547,46 +564,46 @@ export default class Lexer {
 
     getDictEntry(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
-        let name = this.getName(ch)
+        let name = this.getName(this.currentChar)
+        console.log(name)
         if(!name){
-            logger.warn("Entry name is not found")
+            logger.warn("Entry name is not found at position ", this.stream.position)
             this.restorePosition(addr)
             return null
         }
 
+        console.log('Finding dict value for ', name.val, ' at position ', this.stream.position)
         if(this.getSpace()){
-            ch = this.nextChar()
+            this.currentChar = this.nextChar()
         }
 
-        let value = this.getDictValue(ch)
+        console.log('Finding dict value for ', name.val, ' at position ', this.stream.position)
+        let value = this.getDictValue(this.currentChar)
         if(!value){
-            logger.warn("Entry value is not found")
+            logger.warn("Entry value is not found at position ", this.stream.position)
             this.restorePosition(addr)
             return null
         }
 
         this.cleanSavedPosition(addr)
-        return new PDFDictEntry({
-            fieldname : name,
-            value : value
-        })
+        return new PDFDictEntry(name, value)
     }
 
     getDict(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
-        let startCmd = this.getCmd(ch, "<<")
+        let startCmd = this.getCmd(this.currentChar, "<<")
         if(!startCmd){
             this.restorePosition(addr)
             return null
@@ -594,15 +611,18 @@ export default class Lexer {
 
         let entries = []
         while(true){
-            ch = this.nextChar()
+            this.currentChar = this.nextChar()
 
-            let endCmd = this.getCmd(ch, ">>")
+            let endCmd = this.getCmd(this.currentChar, ">>")
             if(endCmd){
                 this.cleanSavedPosition(addr)
-                return new PDFDict(entries)
+                let dict = new PDFDict()
+                dict.loadWithEntries(entries)
+                return dict
             }
 
-            let entry = this.getDictEntry(ch)
+            console.log(String.fromCharCode(this.currentChar))
+            let entry = this.getDictEntry(this.currentChar)
             if(entry){
                 entries.push(entry)
             }else{
@@ -613,96 +633,93 @@ export default class Lexer {
 
     getStream(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
-        let startCmd = this.getCmd(ch, "stream")
+        let startCmd = this.getCmd(this.currentChar, "stream")
         if(!startCmd){
             this.restorePosition(addr)
             return null
         }else{
-            ch = this.nextChar()
+            this.currentChar = this.nextChar()
         }
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
         let streamBuf = []
         while(true){
 
-            this.getLineBreak(ch)
+            this.getLineBreak(this.currentChar)
 
-            let endCmd = this.getCmd(ch, "endstream")
+            let endCmd = this.getCmd(this.currentChar, "endstream")
             if(endCmd){
                 this.cleanSavedPosition(addr)
                 return new PDFStream(Buffer.from(streamBuf)) 
             }
 
-            if(ch === null){
+            if(this.currentChar === null){
                 this.restorePosition(addr)
                 return null
             }
 
-            streamBuf.push(ch)
-            ch = this.nextChar()
+            streamBuf.push(this.currentChar)
+            this.currentChar = this.nextChar()
         }
     }
 
     getXRefSectionHeader(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
-        let firstObjectNum = this.getReal(ch)
+        let firstObjectNum = this.getReal(this.currentChar)
         if(!firstObjectNum){
             this.restorePosition(addr)
             return null
         }else{
-            ch = this.nextChar()
+            this.currentChar = this.nextChar()
         }
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
-        let objectCnt = this.getReal(ch)
+        let objectCnt = this.getReal(this.currentChar)
         if(!objectCnt){
             this.restorePosition(addr)
             return null
         }else{
             this.cleanSavedPosition(addr)
-            return new PDFXRefTableSectionHeader({
-                firstObjectNum : firstObjectNum.val, 
-                objectCnt : objectCnt.val
-            })
+            return new PDFXRefTableSectionHeader(firstObjectNum.val, objectCnt.val)
         }
     }
 
     getXRefSectionEntry(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
         let offset = null
         let offsetBytes = []
         for(let i = 0; i < 10; i ++){
-            if(ch != null){
-                offsetBytes.push(String.fromCharCode(ch))
+            if(this.currentChar != null){
+                offsetBytes.push(String.fromCharCode(this.currentChar))
             }else{
                 this.restorePosition(addr)
                 return null
             }
-            ch = this.nextChar()
+            this.currentChar = this.nextChar()
         }
         try{
             offset = parseInt(offsetBytes.join(''))
@@ -712,20 +729,20 @@ export default class Lexer {
             return null
         }
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
         let generationNumber = null
         let generationBytes = []
         for(let i = 0; i < 5; i ++){
-            if(ch != null){
-                generationBytes.push(String.fromCharCode(ch))
+            if(this.currentChar != null){
+                generationBytes.push(String.fromCharCode(this.currentChar))
             }else{
                 this.restorePosition(addr)
                 return null
             }
-            ch = this.nextChar()
+            this.currentChar = this.nextChar()
         }
         try{
             generationNumber = parseInt(generationBytes.join(''))
@@ -735,27 +752,120 @@ export default class Lexer {
             return null
         }
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
-        let flag = String.fromCharCode(ch)
+        let flag = String.fromCharCode(this.currentChar)
         if(!(flag === 'f' || flag === 'n')){
             this.restorePosition(addr)
             return null
         }
 
-        if(ch == null){
+        if(this.currentChar == null){
             this.restorePosition(addr)
             return null
         }
 
-        return new PDFXRefTableSectionEntry({
-            offset, generationNumber, flag
-        })
+        return new PDFXRefTableSectionEntry(offset, generationNumber, flag)
 
     }
 
+    getIndirectObject(prevCh){
+        let addr = this.savePosition()
+        this.currentChar = prevCh || this.nextChar()
+
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
+        }
+
+        let objNum = this.getReal(this.currentChar)
+        if(objNum){
+            this.currentChar = this.nextChar()
+        }else{
+            this.restorePosition(addr)
+            return null
+        }
+
+        let genNum = this.getReal(this.currentChar)
+        if(genNum){
+            this.currentChar = this.nextChar()
+        }else{
+            this.restorePosition(addr)
+            return null
+        }
+
+        let objCmd = this.getCmd(this.currentChar, 'obj')
+        if(objCmd){
+            this.currentChar = this.nextChar()
+        }else{
+            this.restorePosition(addr)
+            return null
+        }
+
+        let content = []
+
+        while(true){
+
+            if(this.currentChar === null){
+                this.restorePosition(addr)
+                return null
+            }
+            
+            let endCmd = this.getCmd(this.currentChar, "endobj")
+            if(endCmd){
+                this.cleanSavedPosition(addr)
+                return new PDFIndirectObject(objNum, genNum, content)
+            }
+
+            let fnl = [this.getStream, this.getDict]
+            for(let f in fnl){
+                let fn = fnl[f]
+                let pdfobj = fn.apply(this, [this.currentChar])
+                if(pdfobj){
+                    content.push(pdfobj)
+                }
+            }
+
+            this.currentChar = this.nextChar()
+        }
+    }
+
+    getObjectReference(prevCh){
+        let addr = this.savePosition()
+        this.currentChar = prevCh || this.nextChar()
+
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
+        }
+
+        let objNum = this.getReal(this.currentChar)
+        if(objNum){
+            this.currentChar = this.nextChar()
+        }else{
+            this.restorePosition(addr)
+            return null
+        }
+
+        let genNum = this.getReal(this.currentChar)
+        if(genNum){
+            this.currentChar = this.nextChar()
+        }else{
+            this.restorePosition(addr)
+            return null
+        }
+
+        let objCmd = this.getCmd(this.currentChar, 'R')
+        if(objCmd){
+            this.cleanSavedPosition(addr)
+                return new PDFObjectReference(objNum, genNum)
+        }else{
+            this.restorePosition(addr)
+            return null
+        }
+
+    }
+    
     getXRefTable(prevCh){
         const getNewSectionObj = (header) => {
             return {
@@ -764,21 +874,29 @@ export default class Lexer {
             }
         }
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
+        }
+
+        let startCmd = this.getCmd(this.currentChar, "xref")
+        if(startCmd){
+            this.currentChar = this.nextChar()
+        }else{
+            this.restorePosition(addr)
+            return null
         }
 
         let sections = []
         let curSectionPtr = -1
         while(true){
             
-            let entry = this.getXRefSectionEntry(ch)
+            let entry = this.getXRefSectionEntry(this.currentChar)
             if(entry){
                 if(sections[curSectionPtr]){
                     sections[curSectionPtr].entries.push(entry)
-                    ch = this.nextChar()
+                    this.currentChar = this.nextChar()
                 }else{
                     this.restorePosition(addr)
                     return null
@@ -786,11 +904,11 @@ export default class Lexer {
                 continue
             }
 
-            let header = this.getXRefSectionHeader(ch)
+            let header = this.getXRefSectionHeader(this.currentChar)
             if(header){
                 curSectionPtr ++
                 sections[curSectionPtr] = getNewSectionObj(header)
-                ch = this.nextChar()
+                this.currentChar = this.nextChar()
                 continue
             }
 
@@ -799,108 +917,35 @@ export default class Lexer {
                 return null
             }else{
                 this.cleanSavedPosition(addr)
-                return new PDFXRefTable({
-                    sections
-                })
+                return new PDFXRefTable(sections)
             }
         }
     }
 
-    getIndirectObject(prevCh){
+    getTrailer(prevCh){
         let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
+        this.currentChar = prevCh || this.nextChar()
 
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
-        let objNum = this.getReal(ch)
-        if(objNum){
-            ch = this.nextChar()
+        let startCmd = this.getCmd(this.currentChar, "trailer")
+        if(startCmd){
+            this.currentChar = this.nextChar()
         }else{
             this.restorePosition(addr)
             return null
         }
 
-        let genNum = this.getReal(ch)
-        if(genNum){
-            ch = this.nextChar()
-        }else{
-            this.restorePosition(addr)
-            return null
+        if(this.getSpace(this.currentChar)){
+            this.currentChar = this.nextChar()
         }
 
-        let objCmd = this.getCmd(ch, 'obj')
-        if(objCmd){
-            ch = this.nextChar()
-        }else{
-            this.restorePosition(addr)
-            return null
-        }
-
-        let obj = {
-            objectNumber : objNum,
-            generationNumber : genNum,
-            content : []
-        }
-
-        while(true){
-
-            if(ch === null){
-                this.restorePosition(addr)
-                return null
-            }
-            
-            let endCmd = this.getCmd(ch, "endobj")
-            if(endCmd){
-                this.cleanSavedPosition(addr)
-                return new PDFIndirectObject(obj)
-            }
-
-            let fnl = [this.getStream, this.getDict]
-            for(let f in fnl){
-                let fn = fnl[f]
-                let pdfobj = fn.apply(this, [ch])
-                if(pdfobj){
-                    obj.content.push(pdfobj)
-                }
-            }
-
-            ch = this.nextChar()
-        }
-    }
-
-    getObjectReference(prevCh){
-        let addr = this.savePosition()
-        let ch = prevCh || this.nextChar()
-
-        if(this.getSpace(ch)){
-            ch = this.nextChar()
-        }
-
-        let objNum = this.getReal(ch)
-        if(objNum){
-            ch = this.nextChar()
-        }else{
-            this.restorePosition(addr)
-            return null
-        }
-
-        let genNum = this.getReal(ch)
-        if(genNum){
-            ch = this.nextChar()
-        }else{
-            this.restorePosition(addr)
-            return null
-        }
-
-        let objCmd = this.getCmd(ch, 'R')
-        if(objCmd){
+        let trailerDict = this.getDict(this.currentChar)
+        if(trailerDict){
             this.cleanSavedPosition(addr)
-                return new PDFObjectReference({
-                    objectNumber : objNum,
-                    generationNumber : genNum
-                })
+            return new PDFTrailer(trailerDict)
         }else{
             this.restorePosition(addr)
             return null

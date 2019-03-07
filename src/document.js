@@ -5,28 +5,28 @@ import logger from './logger';
 
 export class PDFDocument {
 
-    loadFromFile(path){
+    constructor(path){
         this.reader = new FileReader(path)
-        this.bufferStream = this.reader.toStream()
-        this.load()
+        this.stream = this.reader.toStream()
+        this.lexer = new Lexer(this.stream)
     }
 
     load(){
         try{
-            let startXRef = this.startXRef
+            let xref = this.readXref(this.startXRefOffset)
+            console.log(xref)
         }catch(e){
             logger.error(e)
             throw new InvalidPDFFormatError()
         }
     }
 
-    get startXRef(){
+    get startXRefOffset(){
         let startXrefStr = 'startxref'
-        let found = this.bufferStream.findBackward(startXrefStr, -1)
+        let found = this.stream.findBackward(startXrefStr, -1)
         if(found){
-            this.bufferStream.skip(startXrefStr.length)
-            let lexer = new Lexer(this.bufferStream)
-            let startxrefoffset = lexer.getReal()
+            this.stream.skip(startXrefStr.length)
+            let startxrefoffset = this.lexer.getReal()
             if(startxrefoffset){
                 return startxrefoffset.val
             }else{
@@ -38,6 +38,19 @@ export class PDFDocument {
     }
 
     readXref(offset){
+        this.stream.moveTo(offset)
+        let xrefTable = this.lexer.getXRefTable()
+        return xrefTable
+    }
+
+    // readTrailer(offset){
+        
+    // }
+
+    /**
+     * Construct object number to offset map, able to lazy retrieve object without loading whole file to ram
+     */
+    constructMasterXRefTable(){
 
     }
 

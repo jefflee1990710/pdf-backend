@@ -1,7 +1,5 @@
 export class PDFObject {
-    constructor(val){
-        this.val = val
-    }
+
 
     toString(){
         return JSON.stringify(this.val)
@@ -14,85 +12,85 @@ export class PDFObject {
 
 export class PDFSpace extends PDFObject{
 
-    constructor(val){
-        super(val)
-    }
 }
 
 export class PDFLineBreak extends PDFObject{
 
-    constructor(val){
-        super(val)
-    }
 }
 
 export class PDFNull extends PDFObject{
 
-    constructor(val){
-        super(val)
-    }
 }
 
 export class PDFBoolean extends PDFObject{
 
     constructor(val){
-        super(val)
+        super()
+        this.val = val
     }
 }
 
 export class PDFReal extends PDFObject{
 
     constructor(val){
-        super(val)
+        super()
+        this.val = val
     }
 }
 
 export class PDFCmd extends PDFObject{
 
     constructor(val){
-        super(val)
+        super()
+        this.val = val
     }
 }
 
 export class PDFOctalBytes extends PDFObject{
 
     constructor(val){
-        super(val)
+        super()
+        this.val = val
     }
 }
 
 export class PDFString extends PDFObject{
 
     constructor(val){
-        super(val)
+        super()
+        this.val = val
     }
 }
 
 export class PDFLiteralString extends PDFObject{
 
     constructor(val){
-        super(val)
+        super()
+        this.val = val
     }
 }
 
 export class PDFHexadecimalString extends PDFObject{
 
     constructor(val){
-        super(val)
+        super()
+        this.val = val
     }
 }
 
 export class PDFName extends PDFObject{
 
     constructor(val){
-        super(val)
+        super()
+        this.val = val
     }
 }
 
 export class PDFArray extends PDFObject{
 
     constructor(val){
-        super(val)
+        super()
+        this.val = val
     }
 
     toJson(){
@@ -106,16 +104,10 @@ export class PDFArray extends PDFObject{
 
 export class PDFDictEntry extends PDFObject{
 
-    constructor(val){
-        super(val)
-    }
-
-    get fieldname(){
-        return this.val['fieldname']
-    }
-
-    get value(){
-        return this.val['value']
+    constructor(fieldname, value){
+        super()
+        this.fieldname = fieldname
+        this.value = value
     }
 
     toJson(){
@@ -128,15 +120,29 @@ export class PDFDictEntry extends PDFObject{
 
 export class PDFDict extends PDFObject{
 
-    constructor(val){
-        super(val)
+    constructor(){
+        super()
+        this.entries = {}
+        this.fieldnames = []
+    }
+
+    loadWithEntries(entries){
+        for(let n in entries){
+            let entry = entries[n]
+            this.entries[entry.fieldname.val] = entry.value
+            this.fieldnames.push(entry.fieldname.val)
+        }
+    }
+
+    get(fieldname){
+        return this.entries[fieldname]
     }
 
     toJson(){
         let obj = {}
-        for(let i in this.val){
-            let {val} = this.val[i]
-            obj[val.fieldname.val] = val.value.toJson()
+        for(let i in this.fieldnames){
+            let fieldname = this.fieldnames[i]
+            obj[fieldname] = this.entries[fieldname].toJson()
         }
         return obj
     }
@@ -145,23 +151,24 @@ export class PDFDict extends PDFObject{
 
 export class PDFStream extends PDFObject{
 
-    constructor(val){
-        super(val)
+    constructor(buffer){
+        super()
+        this.buffer = buffer
+    }
+
+    toJson(){
+        return {
+            buffer : this.buffer
+        }
     }
 }
 
 export class PDFXRefTableSectionHeader extends PDFObject {
 
-    constructor(val){
-        super(val)
-    }
-
-    get firstObjectNum(){
-        return this.val['firstObjectNum']
-    }
-
-    get objectCnt(){
-        return this.val['objectCnt']
+    constructor(firstObjectNum, objectCnt){
+        super()
+        this.firstObjectNum = firstObjectNum
+        this.objectCnt = objectCnt
     }
 
     toJson(){
@@ -174,20 +181,11 @@ export class PDFXRefTableSectionHeader extends PDFObject {
 
 export class PDFXRefTableSectionEntry extends PDFObject {
 
-    constructor(val){
-        super(val)
-    }
-
-    get offset(){
-        return this.val['offset']
-    }
-
-    get generationNumber() {
-        return this.val['generationNumber']
-    }
-
-    get flag(){
-        return this.val['flag']
+    constructor(offset, generationNumber, flag){
+        super()
+        this.offset = offset
+        this.generationNumber = generationNumber
+        this.flag = flag
     }
 
     toJson(){
@@ -199,51 +197,41 @@ export class PDFXRefTableSectionEntry extends PDFObject {
     }
 }
 
-export class PDFXRefTable extends PDFObject{
-
-    constructor(val){
-        super(val)
-    }
-}
-
-
 export class PDFIndirectObject extends PDFObject{
 
-    constructor(val){
-        super(val)
-    }
-
-    get objectNumber(){
-        return this.val.objectNumber.toJson()
-    }
-
-    get generationNumber(){
-        return this.val.generationNumber.toJson()
+    constructor(objectNumber, generationNumber, content){
+        super()
+        this.objectNumber = objectNumber
+        this.generationNumber = generationNumber
+        this.content = content
     }
     
     toJson(){
-        let content = this.val.content.map((r) => r.toJson())
+        let content = this.content.map((r) => r.toJson())
         return {
             objectNumber : this.objectNumber,
             generationNumber : this.generationNumber,
             content
         }
-
     }
+
+    // toXrefStreamObj(){
+    //     let dict = null
+    //     let buffer = null
+    //     return {
+    //         objectNumber : this.objectNumber,
+    //         generationNumber : this.generationNumber,
+    //         dict, buffer
+    //     }
+    // }
 }
 
 export class PDFObjectReference extends PDFObject{
     
-    constructor(val){
-        super(val)
-    }
-
-    get objectNumber(){
-        return this.val.objectNumber.toJson()
-    }
-
-    get generationNumber(){
-        return this.val.generationNumber.toJson()
+    constructor(objectNumber, generationNumber){
+        super()
+        this.objectNumber = objectNumber
+        this.generationNumber = generationNumber
     }
 
     toString(){
@@ -258,4 +246,27 @@ export class PDFObjectReference extends PDFObject{
         }
     }
     
+}
+
+export class PDFXRefTable extends PDFObject{
+
+    constructor(sections){
+        super()
+        this.sections = sections
+    }
+
+}
+
+export class PDFTrailer extends PDFObject{
+
+    constructor(dict){
+        super()
+        this.size = dict.get('Size')
+        this.prev = dict.get('Prev')
+        this.root = dict.get('Root')
+        this.encrypt = dict.get('Encrypt')
+        this.info = dict.get('Info')
+        this.id = dict.get('ID')
+    }
+
 }

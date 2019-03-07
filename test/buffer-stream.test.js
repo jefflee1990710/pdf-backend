@@ -26,16 +26,20 @@ describe('BufferStream', () => {
         it("return null if the data reach the end of the stream", () => {
             let reader = new ByteArrayReader(Buffer.from([0x01, 0x02]))
             let bs = new BufferStream(reader)
+            console.log(bs.position)
             assert.equal(bs.getByte(), 0x01)
+            console.log(bs.position)
             assert.equal(bs.getByte(), 0x02)
+            console.log(bs.position)
             assert.equal(bs.getByte(), null)
-            assert.equal(bs.position, 2)
+            console.log(bs.position)
+            assert.equal(bs.position, 3)
         })
         it("return null for reading empty stream", () => {
             let reader = new ByteArrayReader(Buffer.from([]))
             let bs = new BufferStream(reader)
             assert.equal(bs.getByte(), null)
-            assert.equal(bs.position, 0)
+            assert.equal(bs.position, 1)
         })
     })
 
@@ -91,13 +95,13 @@ describe('BufferStream', () => {
         it('return true if the stream is not ned', () => {
             let reader = new ByteArrayReader(Buffer.from([0x01, 0x02, 0x03, 0x04]))
             let bs = new BufferStream(reader)
-            bs.skip()
+            bs.getByte()
             assert.equal(bs.hasNext(), true)
         })
         it('return false if the stream is end', () => {
             let reader = new ByteArrayReader(Buffer.from([0x01, 0x02]))
             let bs = new BufferStream(reader)
-            bs.skip(2)
+            bs.getBytes(2)
             assert.equal(bs.hasNext(), false)
         })
         it('return false if the stream is empty', () => {
@@ -205,7 +209,7 @@ describe('BufferStream', () => {
         it('should reset position to -1, which is starting to read (next is 0 offset)', () => {
             let reader = new FileReader("./pdf-sample/sample.pdf")
             let bs = new BufferStream(reader)
-            bs.skip(1)
+            bs.getByte()
             assert.equal(bs.position, 1)
             bs.reset()
             assert.equal(bs.position, 0)
