@@ -59,6 +59,10 @@ export default class PDFArray extends PDFObject {
         }
     }
 
+    toJSON(){
+        return this.elements.map(r => r.toJSON())
+    }
+
 }
 
 class PDFArrayElement extends PDFOr {

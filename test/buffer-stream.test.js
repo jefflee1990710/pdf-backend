@@ -26,13 +26,9 @@ describe('BufferStream', () => {
         it("return null if the data reach the end of the stream", () => {
             let reader = new ByteArrayReader(Buffer.from([0x01, 0x02]))
             let bs = new BufferStream(reader)
-            console.log(bs.position)
             assert.equal(bs.getByte(), 0x01)
-            console.log(bs.position)
             assert.equal(bs.getByte(), 0x02)
-            console.log(bs.position)
             assert.equal(bs.getByte(), null)
-            console.log(bs.position)
             assert.equal(bs.position, 3)
         })
         it("return null for reading empty stream", () => {

@@ -42,4 +42,8 @@ export default class PDFLineBreak extends PDFObject {
         }
     }
 
+    toJSON(){
+        return ""
+    }
+
 }

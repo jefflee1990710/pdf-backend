@@ -1,6 +1,6 @@
 import "babel-polyfill"
 import BufferStream from '../src/buffer-stream'
-import {ByteArrayReader} from '../src/reader'
+import {ByteArrayReader, FileReader} from '../src/reader'
 import config from 'config'
 import {expect} from 'chai'
 
@@ -19,6 +19,8 @@ import PDFName from "../src/object/PDFName";
 import PDFArray from "../src/object/PDFArray";
 import PDFObjectReference from "../src/object/PDFObjectReference";
 import PDFDict from "../src/object/PDFDict";
+import PDFStreamContent from "../src/object/PDFStreamContent";
+import PDFXRefTable from "../src/object/pdf/PDFXRefTable";
 
 
 let pdfEncoding = config.get('pdf.encoding')
@@ -736,6 +738,93 @@ describe('PDFObject', () =>{
                 expect(stream.position).is.eq(216)
             })
 
+        })
+    })
+
+    describe('PDFStreamContent', () => {
+        describe('#pipe()', () =>{
+            it('can read normal stream content', () => {
+                let strbuf = [
+                    "stream",
+                    Buffer.from([0x01, 0x02, 0x03, 0x04]).toString(config.get('pdf.encoding')),
+                    "endstream"
+                ]
+                let reader = new ByteArrayReader(Buffer.from(strbuf.join('\n'), pdfEncoding))
+                let stream = new BufferStream(reader)
+                let sc = new PDFStreamContent()
+                let result = sc.pipe(stream)
+                expect(sc.buffer[0]).is.eq(0x01)
+                expect(sc.buffer[1]).is.eq(0x02)
+                expect(sc.buffer[2]).is.eq(0x03)
+                expect(sc.buffer[3]).is.eq(0x04)
+                expect(result.start).is.eq(0)
+                expect(result.length).is.eq(21)
+                expect(stream.position).is.eq(21)
+            })
+        })
+    })
+
+    describe('PDFXrefTable', () => {
+        let strbuf = [
+            "xref",
+            "0 6",
+            "0000000000 65535 f",
+            "0000000019 00000 n",
+            "0000000093 00000 n",
+            "0000000147 00000 n",
+            "0000000222 00000 n",
+            "0000000390 00000 n",
+            "6 3",
+            "0000000450 00000 n",
+            "0000000882 00000 n",
+            "0000000938 00000 n",
+            ""
+        ]
+
+        describe('#pipe()', () =>{
+            it('can read simple xref table', () => {
+                let reader = new ByteArrayReader(Buffer.from(strbuf.join('\n'), pdfEncoding))
+                let stream = new BufferStream(reader)
+                let xreftable = new PDFXRefTable()
+                let result = xreftable.pipe(stream)
+                expect(result.start).is.eq(0)
+                expect(result.length).is.eq(184)
+                expect(stream.position).is.eq(184)
+            })
+            it('can read a normal xref table from pdf file', () => {
+                let reader = new FileReader('./pdf-sample/sample.pdf')
+                let stream = new BufferStream(reader)
+                stream.moveTo(2714)
+                let xreftable = new PDFXRefTable()
+                let result = xreftable.pipe(stream)
+                expect(result).is.not.null
+                expect(xreftable.toJSON().calculated.length).is.eq(10)
+            })
+
+        })
+
+        describe('#toJSON', () => {
+            it('can export xref table to json format', () => {
+                let reader = new ByteArrayReader(Buffer.from(strbuf.join('\n'), pdfEncoding))
+                let stream = new BufferStream(reader)
+                let xreftable = new PDFXRefTable()
+                let result = xreftable.pipe(stream)
+                expect(result).is.not.null
+                let json = xreftable.toJSON()
+                expect(json.rows.length).is.eq(11)
+            })
+        })
+
+        describe('#objectTable', () => {
+            it('calculate the offset-object map from xref table', () => {
+                let reader = new ByteArrayReader(Buffer.from(strbuf.join('\n'), pdfEncoding))
+                let stream = new BufferStream(reader)
+                let xreftable = new PDFXRefTable()
+                let result = xreftable.pipe(stream)
+                expect(result).is.not.null
+                let objectTable = xreftable.objectTable
+                expect(objectTable.length).is.eq(8)
+            })
         })
     })
 })

@@ -13,4 +13,8 @@ export default class PDFBoolean extends PDFOr {
             new PDFCmd('false')
         ]
     }
+
+    toJSON(){
+        return this.hit.toJSON()
+    }
 }

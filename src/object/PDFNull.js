@@ -1,16 +1,13 @@
-import PDFAnd from "./condition/PDFAnd";
 import PDFCmd from "./PDFCmd";
 
-export default class PDFNull extends PDFAnd {
+export default class PDFNull extends PDFCmd {
 
     constructor(config){
-        super(config)
+        super('null', config)
     }
 
-    in(){
-        return [
-            new PDFCmd('null')
-        ]
+    toJSON(){
+        return null
     }
 
 }

@@ -47,4 +47,7 @@ export default class PDFObjectReference extends PDFObject {
         }
     }
 
+    toJSON(){
+        return `${this.objectNumber} ${this.generationNumber} R`
+    }
 }

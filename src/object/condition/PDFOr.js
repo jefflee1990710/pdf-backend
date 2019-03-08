@@ -27,4 +27,9 @@ export default class PDFOr extends PDFObject {
         }
         return null
     }
+
+    toJSON(){
+        return this.hit.toJSON()
+    }
+
 }

@@ -7,4 +7,8 @@ export default class PDFObject {
         }
     }
 
+    toJSON(){
+        throw new Error("toJSON no implemented")
+    }
+
 }

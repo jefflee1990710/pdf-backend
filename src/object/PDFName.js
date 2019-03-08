@@ -51,6 +51,10 @@ export default class PDFName extends PDFObject {
         }
     }
 
+    toJSON(){
+        return this.value
+    }
+
 }
 
 class PDFNumberSign extends PDFObject {

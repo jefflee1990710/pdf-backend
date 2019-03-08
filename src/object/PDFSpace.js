@@ -31,7 +31,10 @@ export default class PDFSpace extends PDFObject{
             stream.restorePosition(addr)
             return null;
         }
+    }
 
+    toJSON(){
+        return ""
     }
 
 }

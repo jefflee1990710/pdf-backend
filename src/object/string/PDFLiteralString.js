@@ -67,4 +67,8 @@ export default class PDFLiteralString extends PDFObject {
         return this.buffer.toString(config.get('pdf.encoding'))
     }
 
+    toJSON(){
+        return this.buffer.toString(config.get('pdf.encoding'))
+    }
+
 }

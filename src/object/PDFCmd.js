@@ -34,4 +34,8 @@ export default class PDFCmd extends PDFObject {
         }
     }
 
+    toJSON(){
+        return this.cmd
+    }
+
 }

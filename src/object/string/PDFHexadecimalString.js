@@ -58,4 +58,9 @@ export default class PDFHexadecimalString extends PDFObject {
         return this.buffer.toString(config.get('pdf.encoding'))
     }
 
+    toJSON(){
+        return this.buffer.toString(config.get('pdf.encoding'))
+    }
+
+
 }

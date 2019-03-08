@@ -6,16 +6,26 @@ import PDFCmd from "./PDFCmd";
 import PDFSpace from "./PDFSpace";
 import PDFLiteralString from "./string/PDFLiteralString";
 import PDFHexadecimalString from "./string/PDFHexadecimalString";
-import PDFNull from "./PDFNull";
 import PDFBoolean from "./PDFBoolean"
 import PDFName from "./PDFName"
 import PDFObjectReference from './PDFObjectReference'
 import PDFArray from './PDFArray'
+import PDFNull from "./PDFNull";
+
 
 export default class PDFDict extends PDFObject {
 
     constructor(config){
         super(config)
+        this.content = {}
+    }
+
+    set(fieldname, obj){
+        this.content[fieldname] = obj
+    }
+
+    get(fieldname){
+        return this.content[fieldname]
     }
 
     pipe(stream){
@@ -35,7 +45,6 @@ export default class PDFDict extends PDFObject {
             if(new PDFCmd(">>").pipe(stream)){
                 stream.cleanPosition(addr)
                 this.filled = true
-                this.content = {}
                 for(let i in entries){
                     let entry = entries[i]
                     this.content[entry.fieldname.value] = entry.value
@@ -56,6 +65,15 @@ export default class PDFDict extends PDFObject {
             new PDFSpace().pipe(stream)
         }
 
+    }
+
+    toJSON(){
+        let json = {}
+        for(let i in Object.keys(this.content)){
+            let fieldname = Object.keys(this.content)[i]
+            json[fieldname] = this.content[fieldname].toJSON()
+        }
+        return json
     }
 
 }

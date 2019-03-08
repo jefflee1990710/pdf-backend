@@ -70,4 +70,8 @@ export default class PDFReal extends PDFObject {
         }
 
     }
+
+    toJSON(){
+        return this.value
+    }
 }

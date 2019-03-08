@@ -54,4 +54,8 @@ export default class PDFOctal extends PDFObject {
         }
     }
 
+    toJSON(){
+        return this.value
+    }
+
 }
