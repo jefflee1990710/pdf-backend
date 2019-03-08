@@ -3,25 +3,15 @@ import {InvalidPDFFormatError} from '../../error'
 import logger from '../../logger'
 import PDFXRefTable from './PDFXrefTable';
 import PDFReal from '../PDFReal';
-import PDFAnd from '../condition/PDFAnd';
 import PDFCmd from '../PDFCmd';
 import PDFSpace from '../PDFSpace';
+import PDFTrailer from './PDFTrailer'
 
 export default class PDFDocument {
 
     constructor(path){
         this.reader = new FileReader(path)
         this.stream = this.reader.toStream()
-    }
-
-    load(){
-        try{
-            let xref = this.readXref(this.startXRefOffset)
-            console.log(xref)
-        }catch(e){
-            logger.error(e)
-            throw new InvalidPDFFormatError()
-        }
     }
 
     get isLinearization(){
@@ -34,6 +24,7 @@ export default class PDFDocument {
 
         if(this.isLinearization){
             // Do something if pdf is Linearization
+            return null
         }else{
             this.stream.reset()
             let found = this.stream.findBackward(startXrefStr, -1)
@@ -54,21 +45,32 @@ export default class PDFDocument {
         }
     }
 
-    get startXRef(){
+    getStartXRef(){
         return this._parseXRefByOffset(this.startXRefOffset)
     }
 
-    _parseXRefByOffset(offset){
+    parseXRefByOffset(offset){
         this.stream.reset()
         this.stream.moveTo(offset)
 
-        let startXRef = new PDFXRefTable()
-        let result = startXRef.pipe(this.stream)
+        let xRef = new PDFXRefTable()
+        let result = xRef.pipe(this.stream)
         if(result){
+            logger.debug('Xref table found!')
             // If it is a xref table, trailer come after
-            return startXRef
-        }else{ // maybe it is a xref stream
+            let trailer = new PDFTrailer()
+            result = trailer.pipe(this.stream)
             
+            return {xRef, trailer}
+        }else{ // maybe it is a xref stream
+            logger.debug('Maybe it is a xref stream... try to read it')
+        }
+    }
+
+    toJSON(){
+        return {
+            startXRef : this.startXRef.toJSON(),
+            startTrailer : this.startTrailer.toJSON()
         }
     }
 }

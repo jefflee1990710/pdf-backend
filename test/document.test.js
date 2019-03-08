@@ -30,9 +30,12 @@ describe('PDFDocument', () => {
     describe('#readXref', () => {
         it('read xref-table by offset given', () => {
             let pdfDocument = new PDFDocument('./pdf-sample/sample.pdf')
-            let xref = pdfDocument.startXRef
-            
-            console.log(xref)
+            let startOffset = pdfDocument.startXRefOffset
+            let {xRef, trailer} = pdfDocument.parseXRefByOffset(startOffset)
+            console.log(xRef.toJSON())
+
+            console.log(trailer.toJSON())
+
         })
     })
 
