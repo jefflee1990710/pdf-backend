@@ -12,8 +12,6 @@ export default class PDFDocument {
     constructor(path){
         this.reader = new FileReader(path)
         this.stream = this.reader.toStream()
-
-        // this.startXRef = new PDFXRefTable()
     }
 
     load(){
@@ -40,7 +38,7 @@ export default class PDFDocument {
             this.stream.reset()
             let found = this.stream.findBackward(startXrefStr, -1)
             if(found){
-                this.stream.getBytes(startXrefStr.length)
+                new PDFCmd(startXrefStr).pipe(this.stream)
                 new PDFSpace().pipe(this.stream)
                 let offset = new PDFReal()
                 let result = offset.pipe(this.stream)
@@ -56,4 +54,21 @@ export default class PDFDocument {
         }
     }
 
+    get startXRef(){
+        return this._parseXRefByOffset(this.startXRefOffset)
+    }
+
+    _parseXRefByOffset(offset){
+        this.stream.reset()
+        this.stream.moveTo(offset)
+
+        let startXRef = new PDFXRefTable()
+        let result = startXRef.pipe(this.stream)
+        if(result){
+            // If it is a xref table, trailer come after
+            return startXRef
+        }else{ // maybe it is a xref stream
+            
+        }
+    }
 }
