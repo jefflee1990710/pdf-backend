@@ -58,6 +58,23 @@ const hexToAscii = (str1) => {
 const deepCopy = (obj) => {
     return JSON.parse(JSON.stringify(obj))
 }
+
+const calculateRowSize = (colors, bitsPerComponent, columns) => {
+    return (columns * colors * bitsPerComponent + 0b00000111) >> 3;
+}
+
+const calcSetBitSeq = (by, startBit, bitSize, val) => {
+    let mask = ((1 << bitSize) - 1);
+    let truncatedVal = val & mask;
+    mask = ~(mask << startBit);
+    return (by & mask) | (truncatedVal << startBit);
+}
+
+const getBitSeq = (by, startBit, bitSize) => {
+    let mask = ((1 << bitSize) - 1);
+    return (by >>> startBit) & mask;
+}
+
   
 export default {
     isNumber, 
@@ -66,5 +83,8 @@ export default {
     isLineBreak,
     readonly,
     hexToAscii,
-    deepCopy
+    deepCopy,
+    calculateRowSize,
+    calcSetBitSeq,
+    getBitSeq
 }

@@ -5,6 +5,7 @@ import PDFReal from "../PDFReal";
 import PDFOr from "../condition/PDFOr";
 import PDFSpace from "../PDFSpace";
 import PDFLineBreak from "../PDFLineBreak";
+import { UncompressedObjectOffsetRecord } from "./PDFXRef";
 
 export default class PDFXRefTable extends PDFObject {
 
@@ -17,18 +18,17 @@ export default class PDFXRefTable extends PDFObject {
         let startObjectNumber = 0
         let started = false
         for(let r in this.rows){
-            let row = this.rows[r].toJSON()
-            if('startObjectNumber' in row){
+            let row = this.rows[r]
+            if(row.constructor.name === 'PDFXrefTableSectionHeader'){
                 started = true
-                startObjectNumber = row.startObjectNumber
+                startObjectNumber = row.get('startObjectNumber').value
             }else{
                 if(started){
-                    if(row['flag'] === 'n'){
-                        table.push({
-                            objectNumber : startObjectNumber,
-                            generationNumber : row.generationNumber,
-                            offset : row.objectOffset
-                        })
+                    if(row.get('flag').hit.cmd === 'n'){
+                        table.push(new UncompressedObjectOffsetRecord(
+                            startObjectNumber, 
+                            row.get('generationNumber').value, 
+                            row.get('objectOffset').value))
                     }
                     startObjectNumber ++
                 }

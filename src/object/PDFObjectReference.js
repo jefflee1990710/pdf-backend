@@ -52,4 +52,8 @@ export default class PDFObjectReference extends PDFObject {
             generationNumber : this.generationNumber.value
         }
     }
+
+    toDisplayName(){
+        return `${this.objectNumber.value} ${this.generationNumber.value} R`
+    }
 }

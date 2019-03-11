@@ -22,6 +22,7 @@ import PDFDict from "../src/object/PDFDict";
 import PDFStreamContent from "../src/object/PDFStreamContent";
 import PDFXRefTable from "../src/object/pdf/PDFXRefTable";
 import PDFIndirectObject from "../src/object/PDFIndirectObject";
+import PDFXRefStream from "../src/object/pdf/PDFXRefStream";
 
 
 let pdfEncoding = config.get('pdf.encoding')
@@ -776,11 +777,11 @@ describe('PDFObject', () =>{
                 let reader = new ByteArrayReader(Buffer.from(strbuf.join('\n'), pdfEncoding))
                 let stream = new BufferStream(reader)
                 let io = new PDFIndirectObject()
+                io.receiveElement = () => {}
                 let result = io.pipe(stream)
                 expect(result.start).is.eq(0)
                 expect(result.length).is.eq(32)
                 expect(stream.position).is.eq(32)
-                console.log(io)
             })
             it('should throw exception for invalid entry value', () => {
                 let strbuf = [
@@ -794,6 +795,23 @@ describe('PDFObject', () =>{
                 expect(() => {
                     io.pipe(stream)
                 }).throw
+            })
+            it('should able to read stream object', () => {
+                let strbuf = [
+                    "13 0 obj",
+                    "<</DecodeParms<</Columns 4/Predictor 12>>/Filter/FlateDecode/ID[<4DC91A1875A6D707AEC203BB021C93A0><F6C92B368A8A13408457A1D395A37EB9>]/Index[7 21]/Info 6 0 R/Length 52/Prev 7657/Root 8 0 R/Size 28/Type/XRef/W[1 2 1]>>stream",
+                    "hÞbbd``b`² ±H0§	6G ñå#Ã4,#¹ÄÆ_  L¤ð",
+                    "endstream",
+                    "endobj"
+                ]
+                let reader = new ByteArrayReader(Buffer.from(strbuf.join('\n'), pdfEncoding))
+                let stream = new BufferStream(reader)
+                let io = new PDFIndirectObject()
+                io.receiveElement = () => {}
+                let result = io.pipe(stream)
+                expect(result.start).is.eq(0)
+                expect(result.length).is.eq(301)
+                expect(stream.position).is.eq(301)
             })
         })
     })
@@ -832,6 +850,7 @@ describe('PDFObject', () =>{
                 let xreftable = new PDFXRefTable()
                 let result = xreftable.pipe(stream)
                 expect(result).is.not.null
+                console.log(xreftable.objectTable)
                 expect(xreftable.toJSON().objectTable.length).is.eq(10)
             })
 
@@ -859,6 +878,25 @@ describe('PDFObject', () =>{
                 let objectTable = xreftable.objectTable
                 expect(objectTable.length).is.eq(8)
             })
+        })
+    })
+
+    describe('PDFXRefStream', () => {
+        it('should able to read stream object', () => {
+            let strbuf = [
+                "13 0 obj",
+                "<</DecodeParms<</Columns 4/Predictor 12>>/Filter/FlateDecode/ID[<4DC91A1875A6D707AEC203BB021C93A0><F6C92B368A8A13408457A1D395A37EB9>]/Index[7 21]/Info 6 0 R/Length 52/Prev 7657/Root 8 0 R/Size 28/Type/XRef/W[1 2 1]>>stream",
+                "hÞbbd``b`² ±H0§	6G ñå#Ã4,#¹ÄÆ_  L¤ð",
+                "endstream",
+                "endobj"
+            ]
+            let reader = new ByteArrayReader(Buffer.from(strbuf.join('\n'), pdfEncoding))
+            let stream = new BufferStream(reader)
+            let io = new PDFXRefStream()
+            let result = io.pipe(stream)
+            expect(result.start).is.eq(0)
+            expect(result.length).is.eq(301)
+            expect(stream.position).is.eq(301)
         })
     })
 })

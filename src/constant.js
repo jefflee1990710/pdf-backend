@@ -1,3 +1,5 @@
+import FilterInflate from './filter/FilterInflate'
+
 const specialChars = [
     1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, // 0x
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
@@ -17,6 +19,11 @@ const specialChars = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  // fx
 ];
 
+const filterNames = {
+    'FlateDecode' : FilterInflate
+}
+
 export default {
-    specialChars
+    specialChars,
+    filterNames
 }

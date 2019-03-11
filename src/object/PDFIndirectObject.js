@@ -8,13 +8,16 @@ import PDFStreamContent from "./PDFStreamContent";
 import PDFDict from "./PDFDict";
 import { InvalidPDFFormatError } from "../error";
 
-
 export default class PDFIndirectObject extends PDFObject {
 
     constructor(config){
         super(config)
     }
 
+    receiveElement(element, index){
+        console.log('Element received : ', element)
+        // Receive Element
+    }
 
     pipe(stream){
         let addr = stream.savePosition()
@@ -26,15 +29,20 @@ export default class PDFIndirectObject extends PDFObject {
             stream.restorePosition(addr)
             return null
         }
+
         new PDFSpace().pipe(stream)
 
-        let content = []
+        let elements = []
+        let cnt = 0
         while(true){
 
-            let oc = new PDFIndirectObjectContent()
+            cnt ++
+
+            let oc = new PDFIndirectObjectElement()
             let ocResult = oc.pipe(stream)
             if(ocResult){
-                content.push(oc.hit)
+                elements.push(oc.hit)
+                this.receiveElement(oc.hit, cnt - 1)
             }
 
             new PDFSpace().pipe(stream)
@@ -44,7 +52,7 @@ export default class PDFIndirectObject extends PDFObject {
             if(endobjResult){
                 stream.cleanPosition(addr)
                 this.filled = true
-                this.content = content
+                this.elements = elements
                 return this.pos = {
                     start, length : (stream.position - start)
                 }
@@ -54,8 +62,6 @@ export default class PDFIndirectObject extends PDFObject {
                 throw new InvalidPDFFormatError("Invalid indirect object structure - non ending or acceptable content detected!")
             }
         }
-
-        
 
     }
 }
@@ -77,7 +83,7 @@ class PDFIndirectObjectName extends PDFAnd {
     }
 }
 
-class PDFIndirectObjectContent extends PDFOr {
+class PDFIndirectObjectElement extends PDFOr {
 
     constructor(config){
         super(config)
