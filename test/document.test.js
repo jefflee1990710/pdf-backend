@@ -27,15 +27,24 @@ describe('PDFDocument', () => {
         })
     })
 
-    describe('#readXref', () => {
+    describe('#parseXRefTableByOffset', () => {
         it('read xref-table by offset given', () => {
             let pdfDocument = new PDFDocument('./pdf-sample/sample.pdf')
             let startOffset = pdfDocument.startXRefOffset
-            let {xRef, trailer} = pdfDocument.parseXRefByOffset(startOffset)
-            console.log(xRef.toJSON())
-
-            console.log(trailer.toJSON())
-
+            let trailer = pdfDocument.parseXRefTableByOffset(startOffset)
+            console.log(trailer)
+        })
+        it('read xref table with incremental-update', () => {
+            let pdfDocument = new PDFDocument('./pdf-sample/incremental-update-demo-1.pdf')
+            let startOffset = pdfDocument.startXRefOffset
+            let trailer = pdfDocument.parseXRefTableByOffset(startOffset)
+            // console.log(trailer)
+        })
+        it('return null for read xref stream', () => {
+            let pdfDocument = new PDFDocument('./pdf-sample/xref-stream-sample-1.pdf')
+            let startOffset = pdfDocument.startXRefOffset
+            let trailer = pdfDocument.parseXRefTableByOffset(startOffset)
+            // console.log(trailer)
         })
     })
 

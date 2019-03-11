@@ -79,7 +79,7 @@ export default class PDFXRefTable extends PDFObject {
     toJSON(){
         return {
             rows : this.rows.map(r => r.toJSON()),
-            calculated : this.objectTable
+            objectTable : this.objectTable
         }
     }
 }

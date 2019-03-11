@@ -13,7 +13,7 @@ export default class PDFTrailer extends PDFAnd{
         return [
             new PDFCmd('trailer'),
             new PDFSpace(),
-            new PDFDict({name : 'trailer'})
+            new PDFDict({name : 'trailerDict'})
         ]
     }
 }

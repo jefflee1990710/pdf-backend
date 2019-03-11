@@ -11,6 +11,7 @@ import PDFName from "./PDFName"
 import PDFObjectReference from './PDFObjectReference'
 import PDFArray from './PDFArray'
 import PDFNull from "./PDFNull";
+import { InvalidPDFFormatError } from "../error";
 
 
 export default class PDFDict extends PDFObject {
@@ -25,7 +26,7 @@ export default class PDFDict extends PDFObject {
     }
 
     get(fieldname){
-        return this.content[fieldname]
+        return this.content[fieldname] ? this.content[fieldname].hit : null
     }
 
     pipe(stream){
@@ -59,7 +60,8 @@ export default class PDFDict extends PDFObject {
             if(entryResult){
                 entries.push(entry)
             }else{
-                console.warn("Error when finding entry at", stream.position)
+                let byte = stream.peekByte()
+                console.warn("Dictionary entry is broken, next character can't parse - " + String.fromCharCode(byte))
             }
 
             new PDFSpace().pipe(stream)
@@ -89,12 +91,14 @@ class PDFDictEntry extends PDFObject {
         let start = stream.position
 
         let fieldname = new PDFName()
-        if(fieldname.pipe(stream)){
+        let result = fieldname.pipe(stream);
+        if(result){
 
             new PDFSpace().pipe(stream)
 
             let valueObj = new PDFDictValue()
-            if(valueObj.pipe(stream)){
+            let valueResult = valueObj.pipe(stream)
+            if(valueResult){
                 stream.cleanPosition(addr)
                 this.filled = true
                 this.fieldname = fieldname
@@ -103,8 +107,8 @@ class PDFDictEntry extends PDFObject {
                     start, length : (stream.position - start)
                 }
             }else{
-                stream.restorePosition(addr)
-                return null;
+                let byte = stream.peekByte()
+                throw new InvalidPDFFormatError("Dictionary entry is broken, next character can't parse - " + String.fromCharCode(byte))
             }
 
         }else{

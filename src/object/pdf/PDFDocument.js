@@ -49,7 +49,7 @@ export default class PDFDocument {
         return this._parseXRefByOffset(this.startXRefOffset)
     }
 
-    parseXRefByOffset(offset){
+    parseXRefTableByOffset(offset){
         this.stream.reset()
         this.stream.moveTo(offset)
 
@@ -59,12 +59,27 @@ export default class PDFDocument {
             logger.debug('Xref table found!')
             // If it is a xref table, trailer come after
             let trailer = new PDFTrailer()
-            result = trailer.pipe(this.stream)
-            
-            return {xRef, trailer}
+            result = trailer.pipe(this.stream)  
+            let trailerDict = trailer.get('trailerDict') 
+            return {
+                xRefTable : xRef,
+                root : trailerDict.get('Root'),
+                prev : trailerDict.get('Prev'),
+                info : trailerDict.get('Info')
+            }
         }else{ // maybe it is a xref stream
             logger.debug('Maybe it is a xref stream... try to read it')
+            return null
         }
+    }
+
+    parseXRefStreamByOffset(offset){
+        this.stream.reset()
+        this.stream.moveTo(offset)
+    }
+
+    readAllXRefTable(){
+
     }
 
     toJSON(){

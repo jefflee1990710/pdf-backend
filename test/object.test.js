@@ -21,6 +21,7 @@ import PDFObjectReference from "../src/object/PDFObjectReference";
 import PDFDict from "../src/object/PDFDict";
 import PDFStreamContent from "../src/object/PDFStreamContent";
 import PDFXRefTable from "../src/object/pdf/PDFXRefTable";
+import PDFIndirectObject from "../src/object/PDFIndirectObject";
 
 
 let pdfEncoding = config.get('pdf.encoding')
@@ -764,6 +765,39 @@ describe('PDFObject', () =>{
         })
     })
 
+    describe('PDFIndirectObject', () => {
+        describe('#pipe()', () => {
+            it('can read simple dictionary object', () => {
+                let strbuf = [
+                    "1 0 obj",
+                    "<</Type /Button>>",
+                    "endobj"
+                ]
+                let reader = new ByteArrayReader(Buffer.from(strbuf.join('\n'), pdfEncoding))
+                let stream = new BufferStream(reader)
+                let io = new PDFIndirectObject()
+                let result = io.pipe(stream)
+                expect(result.start).is.eq(0)
+                expect(result.length).is.eq(32)
+                expect(stream.position).is.eq(32)
+                console.log(io)
+            })
+            it('should throw exception for invalid entry value', () => {
+                let strbuf = [
+                    "1 0 obj",
+                    "<</Type Button>>",
+                    "endobj"
+                ]
+                let reader = new ByteArrayReader(Buffer.from(strbuf.join('\n'), pdfEncoding))
+                let stream = new BufferStream(reader)
+                let io = new PDFIndirectObject()
+                expect(() => {
+                    io.pipe(stream)
+                }).throw
+            })
+        })
+    })
+
     describe('PDFXrefTable', () => {
         let strbuf = [
             "xref",
@@ -798,7 +832,7 @@ describe('PDFObject', () =>{
                 let xreftable = new PDFXRefTable()
                 let result = xreftable.pipe(stream)
                 expect(result).is.not.null
-                expect(xreftable.toJSON().calculated.length).is.eq(10)
+                expect(xreftable.toJSON().objectTable.length).is.eq(10)
             })
 
         })

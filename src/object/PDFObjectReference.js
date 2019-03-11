@@ -7,9 +7,8 @@ import config from 'config'
 
 export default class PDFObjectReference extends PDFObject {
 
-    constructor(cmd, config){
+    constructor(config){
         super(config)
-        this.cmd = cmd
     }
 
     pipe(stream){
@@ -25,7 +24,7 @@ export default class PDFObjectReference extends PDFObject {
         new PDFSpace(this.config).pipe(stream)
 
         let generationNumber = new PDFReal(config)
-        if(!generationNumber.pipe(stream)){
+        if(!generationNumber.pipe(stream)){   
             stream.restorePosition(addr)
             return null;
         }

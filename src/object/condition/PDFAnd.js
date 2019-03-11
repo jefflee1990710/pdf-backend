@@ -1,13 +1,22 @@
-import PDFDict from '../PDFDict'
+import PDFObject from '../PDFObject';
 
-export default class PDFAnd extends PDFDict {
+export default class PDFAnd extends PDFObject {
 
     constructor(config){
         super(config)
+        this.content = {}
     }
 
     in(){
         return []
+    }
+
+    set(fieldname, obj){
+        this.content[fieldname] = obj
+    }
+
+    get(fieldname){
+        return this.content[fieldname]
     }
 
     pipe(stream){
@@ -26,7 +35,7 @@ export default class PDFAnd extends PDFDict {
         for(let i in ins){
             let obj = ins[i]
             if(obj.name){
-                this.set(obj.name, obj)
+                this.content[obj.name] = obj
             }
         }
         stream.cleanPosition(addr)
@@ -34,6 +43,14 @@ export default class PDFAnd extends PDFDict {
         return this.pos = {
             start, length : (stream.position - start)
         }
+    }
 
+    toJSON(){
+        let result = {}
+        for(let i in Object.keys(this.content)){
+            let fieldname = Object.keys(this.content)[i]
+            result[fieldname] = this.content[fieldname].toJSON()
+        }
+        return result;
     }
 }
