@@ -27,10 +27,12 @@ describe('PDFDocument', () => {
     })
 
     describe('#parseXRefTableByOffset', () => {
+        const {parseXRefTableByOffset} = require('../src/object/pdf/PDFDocument')
+
         it('read xref-table by offset given', async () => {
             let pdfDocument = new PDFDocument('./pdf-sample/sample.pdf')
             let startOffset = pdfDocument.startXRefOffset
-            let xref =  await pdfDocument.parseXRefTableByOffset(startOffset)
+            let xref =  await parseXRefTableByOffset(pdfDocument.stream, startOffset)
             expect(xref.root.toDisplayName()).is.eq('1 0 R')
             expect(xref.prev).is.null
             expect(xref.info.toDisplayName()).is.eq('10 0 R')
@@ -38,7 +40,7 @@ describe('PDFDocument', () => {
         it('read xref table with incremental-update', async () => {
             let pdfDocument = new PDFDocument('./pdf-sample/incremental-update-demo-1.pdf')
             let startOffset = pdfDocument.startXRefOffset
-            let xref = await pdfDocument.parseXRefTableByOffset(startOffset)
+            let xref = await parseXRefTableByOffset(pdfDocument.stream, startOffset)
             expect(xref.root.toDisplayName()).is.eq('1 0 R')
             expect(xref.prev.value).is.eq(599)
             expect(xref.info).is.null
@@ -46,24 +48,26 @@ describe('PDFDocument', () => {
         it('return null for read xref stream', async () => {
             let pdfDocument = new PDFDocument('./pdf-sample/xref-stream-sample-1.pdf')
             let startOffset = pdfDocument.startXRefOffset
-            let xref =  await pdfDocument.parseXRefTableByOffset(startOffset)
+            let xref =  await parseXRefTableByOffset(pdfDocument.stream, startOffset)
             expect(xref).is.null
         })
     })
 
     describe('#getXRefOffsetByOffset', () => {
         it('should read xref offset by its offset', () => {
+            const {getXRefOffsetByOffset} = require('../src/object/pdf/PDFDocument')
             let pdfDocument = new PDFDocument('./pdf-sample/incremental-update-demo-1.pdf')
-            let offset = pdfDocument.getXRefOffsetByOffset(599)
+            let offset = getXRefOffsetByOffset(pdfDocument.stream, 599)
             expect(offset).is.eq(425)
         })
     })
 
     describe('#parseXRefStreamByOffset', () => {
         it('can parse ref stream', async () => {
+            const {parseXRefStreamByOffset} = require('../src/object/pdf/PDFDocument')
             let pdfDocument = new PDFDocument('./pdf-sample/xref-stream-sample-1.pdf')
             let startOffset = pdfDocument.startXRefOffset
-            let xref =  await pdfDocument.parseXRefStreamByOffset(startOffset)
+            let xref =  await parseXRefStreamByOffset(pdfDocument.stream, startOffset)
             expect(xref.root.toDisplayName()).is.eq('8 0 R')
             expect(xref.prev.value).is.eq(7657)
             expect(xref.info.toDisplayName()).is.eq('6 0 R')
@@ -72,8 +76,9 @@ describe('PDFDocument', () => {
 
     describe('#parseObjectStreamByOffset', () => {
         it('can parse object stream', async () => {
+            const {parseObjectStreamByOffset} = require('../src/object/pdf/PDFDocument')
             let pdfDocument = new PDFDocument('./pdf-sample/xref-stream-sample-1.pdf')
-            let objectStream =  await pdfDocument.parseObjectStreamByOffset(776)
+            let objectStream =  await parseObjectStreamByOffset(pdfDocument.stream, 776)
             expect(objectStream.dict).is.not.null
             expect(objectStream.dict.get('Filter').value).is.eq('FlateDecode')
             expect(objectStream.dict.get('Length').value).is.eq(773)
@@ -81,32 +86,25 @@ describe('PDFDocument', () => {
         })
     })
 
-    describe('#calculatedXRefTable', async () => {
+    describe('#getMasterXRef', async () => {
         it('can get master xref table from a updated pdf', async () => {
             let pdfDocument = new PDFDocument('./pdf-sample/incremental-update-demo-1.pdf')
-            let xref = await pdfDocument.calculatedXRefTable()
+            let xref = await pdfDocument.getMasterXRef()
             // expect(xref.objectMap['6 0 R'].offset).is.eq(617)
             console.log(xref)
             
         })
         it('can retrieve master xref from a xreft stream pdf', async () => {
             let pdfDocument = new PDFDocument('./pdf-sample/xref-stream-sample-1.pdf')
-            let xref = await pdfDocument.calculatedXRefTable()
+            let xref = await pdfDocument.getMasterXRef()
             // console.log(xref)
-        })
-    })
-
-    describe('#load', async () => {
-        it('construct tree of incremental PDF', async () => {
-            let pdfDocument = new PDFDocument('./pdf-sample/incremental-update-demo-1.pdf')
-            await pdfDocument.load()
         })
     })
 
     describe('#rootObjectOffset', () => {
         it('retrieve root object offset', async () => {
             let pdfDocument = new PDFDocument('./pdf-sample/incremental-update-demo-1.pdf')
-            let xref = await pdfDocument.calculatedXRefTable()
+            let xref = await pdfDocument.getMasterXRef()
             let objRecord = xref.rootObjectOffset
             expect(objRecord.offset).is.eq(9)
         })
