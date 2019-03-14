@@ -43,6 +43,46 @@ PDFDocument.xRef -> PDFXRef
 ---
 ## PDFCatalog
 
+-- Version - the version of PDF specification to which the document conforms.
+```javascript
+PDFCatalog.Version
+```
+
+-- Extensions
+```javascript
+PDFCatalog.Extensions
+```
+
+-- Pages
+```javascript
+PDFCatalog.Pages
+```
+
+-- PageLabels
+```javascript
+PDFCatalog.PageLabels
+```
+
+-- Names
+```javascript
+PDFCatalog.Names
+```
+
+-- Dests
+```javascript
+PDFCatalog.Dests
+```
+
+-- ViewerPreferences
+```javascript
+PDFCatalog.ViewerPreferences
+```
+
+-- PageLayout
+```javascript
+PDFCatalog.PageLayout
+```
+
 ---
 ## PDFPage
 
