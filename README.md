@@ -28,5 +28,5 @@ yarn test
 ## Bug Report
 
 ## API Specification
-- [PDF Document Structure](https://github.com/jefflee1990710/pdf-backend/blob/master/src/object/readme.md)
-- [PDF Common Object](https://github.com/jefflee1990710/pdf-backend/blob/master/src/object/pdf/readme.md) 
+- [PDF Document Structure](https://github.com/jefflee1990710/pdf-backend/blob/master/src/object/pdf/readme.md)
+- [PDF Common Object](https://github.com/jefflee1990710/pdf-backend/blob/master/src/object/readme.md) 
