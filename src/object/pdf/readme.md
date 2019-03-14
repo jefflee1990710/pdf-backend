@@ -68,6 +68,21 @@ PDFDocument.getMasterXRef() -> PDFXRef
 ---
 ## PDFXRef
 
+- Search offset of a indirect object from beginning of the file by objectName and generationNumber
+```
+PDFXRef.searchOffsetRecord(objectNumber, generationNumber) -> UncompressedObjectOffsetRecord/CompressedObjectOffsetRecord/null
+```
+
+- Search offset of a indirect object from beginning of the file by object reference string
+```
+PDFXRef.searchOffsetRecordByReferenceString(objectReferenceStr) -> UncompressedObjectOffsetRecord/CompressedObjectOffsetRecord/null
+```
+
+- Offset of root object if exist
+```
+PDFXRef.rootObjectOffset
+```
+
 ---
 ## PDFXRefStream
 
