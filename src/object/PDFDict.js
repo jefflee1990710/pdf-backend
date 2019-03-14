@@ -29,6 +29,10 @@ export default class PDFDict extends PDFObject {
         return this.content[fieldname] ? this.content[fieldname].hit : null
     }
 
+    get fields(){
+        return Object.keys(this.content)
+    }
+
     pipe(stream){
         let addr = stream.savePosition()
         let start = stream.position
