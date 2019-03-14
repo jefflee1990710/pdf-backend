@@ -26,7 +26,20 @@ export default class PDFXRef {
         return null
     }
 
+    searchOffsetRecordByReferenceString(objectReferenceStr){
+        for(let i in this.objectTable){
+            let row = this.objectTable[i]
+            if(`${row.objectNumber} ${row.generationNumber} R` === objectReferenceStr){
+                return row
+            }
+        }
+        return null
+    }
+
     get rootObjectOffset(){
+        if(!this.root){
+            return null
+        }
         return this.searchOffsetRecord(this.root.objectNumber.value, this.root.generationNumber.value)
     }
 

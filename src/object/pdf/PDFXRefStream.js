@@ -21,6 +21,10 @@ export default class PDFXRefStream extends PDFIndirectObject{
         }
     }
 
+    get decodedBuffer(){
+        
+    }
+
     get filters(){
         let Filters = this.dict.get('Filter')
         let filtersList = []

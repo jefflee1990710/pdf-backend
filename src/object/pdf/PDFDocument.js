@@ -10,7 +10,6 @@ import PDFXRefStream from './PDFXRefStream';
 import PDFXRef from './PDFXRef';
 import FilterInflate from '../../filter/FilterInflate';
 import PDFCatalog from './PDFCatalog'
-import BufferStream from '../../buffer-stream';
 
 export default class PDFDocument {
 
@@ -91,7 +90,7 @@ export default class PDFDocument {
     }
 
     async getMasterXRef(){
-        let xrefList = this.getAllXRef()
+        let xrefList = await this.getAllXRef()
 
         let root = null
         let info = null

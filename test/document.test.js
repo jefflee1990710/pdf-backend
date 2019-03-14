@@ -90,23 +90,28 @@ describe('PDFDocument', () => {
         it('can get master xref table from a updated pdf', async () => {
             let pdfDocument = new PDFDocument('./pdf-sample/incremental-update-demo-1.pdf')
             let xref = await pdfDocument.getMasterXRef()
-            // expect(xref.objectMap['6 0 R'].offset).is.eq(617)
-            console.log(xref)
+            expect(xref.root.toDisplayName()).is.eq('1 0 R')
+            expect(xref.objectTable.length).is.eq(6)
             
         })
         it('can retrieve master xref from a xreft stream pdf', async () => {
             let pdfDocument = new PDFDocument('./pdf-sample/xref-stream-sample-1.pdf')
             let xref = await pdfDocument.getMasterXRef()
-            // console.log(xref)
+            expect(xref.root.toDisplayName()).is.eq('8 0 R')
+            expect(xref.objectTable.length).is.eq(21)
         })
     })
 
-    describe('#rootObjectOffset', () => {
-        it('retrieve root object offset', async () => {
+    describe('#getAllXRef', () => {
+        it('retrieve all xref in incremental pdf', async () => {
             let pdfDocument = new PDFDocument('./pdf-sample/incremental-update-demo-1.pdf')
-            let xref = await pdfDocument.getMasterXRef()
-            let objRecord = xref.rootObjectOffset
-            expect(objRecord.offset).is.eq(9)
+            let allXRef = await pdfDocument.getAllXRef()
+            expect(allXRef.length).is.eq(2)
+        })
+        it('retrieve all xref in incremental pdf with new object', async () => {
+            let pdfDocument = new PDFDocument('./pdf-sample/incremental-update-demo-2.pdf')
+            let allXRef = await pdfDocument.getAllXRef()
+            expect(allXRef.length).is.eq(3)        
         })
     })
 
