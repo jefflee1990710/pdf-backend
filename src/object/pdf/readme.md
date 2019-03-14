@@ -41,7 +41,7 @@ PDFDocument.xRef -> PDFXRef
 ```
 
 ---
-### PDFCatalog
+## PDFCatalog
 
 ---
 ## PDFPage
