@@ -850,7 +850,6 @@ describe('PDFObject', () =>{
                 let xreftable = new PDFXRefTable()
                 let result = xreftable.pipe(stream)
                 expect(result).is.not.null
-                console.log(xreftable.objectTable)
                 expect(xreftable.toJSON().objectTable.length).is.eq(10)
             })
 

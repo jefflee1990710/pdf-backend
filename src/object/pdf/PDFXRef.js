@@ -1,7 +1,11 @@
+
 export default class PDFXRef {
 
-    constructor(){
-        this.objectTable = []
+    constructor(root, info, prev, objectTable){
+        this.root = root
+        this.info = info
+        this.prev = prev
+        this.objectTable = objectTable || []
     }
 
     addUncompressedObjectRecord(objectNumber, generationNumber, offset){
@@ -10,6 +14,20 @@ export default class PDFXRef {
 
     addCompressedObjectRecord(objectNumber, objectStreamObjectNumber, offsetInStream){
         this.objectTable.push(new CompressedObjectOffsetRecord(objectNumber, objectStreamObjectNumber, offsetInStream))
+    }
+
+    searchOffsetRecord(objectNumber, generationNumber){
+        for(let i in this.objectTable){
+            let row = this.objectTable[i]
+            if(row.objectNumber === objectNumber && row.generationNumber === generationNumber){
+                return row
+            }
+        }
+        return null
+    }
+
+    get rootObjectOffset(){
+        return this.searchOffsetRecord(this.root.objectNumber.value, this.root.generationNumber.value)
     }
 
 }
@@ -31,9 +49,9 @@ export class CompressedObjectOffsetRecord {
 
     constructor(objectNumber, objectStreamObjectNumber, offsetInStream){
         this.objectNumber = objectNumber
+        this.generationNumber = 0
         this.objectStreamObjectNumber = objectStreamObjectNumber
         this.offsetInStream = offsetInStream
-        this.generationNumber = 0
     }
 
     getObjectName(){

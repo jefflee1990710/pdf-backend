@@ -9,6 +9,7 @@ import PDFTrailer from './PDFTrailer'
 import PDFXRefStream from './PDFXRefStream';
 import PDFXRef from './PDFXRef';
 import FilterInflate from '../../filter/FilterInflate';
+import PDFCatalog from './PDFCatalog'
 
 export default class PDFDocument {
 
@@ -19,6 +20,23 @@ export default class PDFDocument {
 
     async load(){
         this.xref = await this.calculatedXRefTable()
+        let catalog = this.getObjectByOffset(this.xref.rootObjectOffset.offset)
+
+        console.log(catalog.toJSON())
+    }
+
+    getObjectByOffset(offset){
+        logger.debug(`Parsing object at offset ${offset}`)
+        this.stream.reset()
+        this.stream.moveTo(offset)
+
+        let obj = new PDFCatalog()
+        let result = obj.pipe(this.stream)
+        if(result){
+            return obj
+        }else{
+            return null
+        }
     }
 
     get isLinearization(){
@@ -222,9 +240,14 @@ export default class PDFDocument {
             }
         }
 
-        return {
-            root, info, objectMap
+        let objectTable = []
+        for(let i in Object.keys(objectMap)){
+            let objectName = Object.keys(objectMap)[i]
+            objectTable.push(objectMap[objectName])
         }
+        return new PDFXRef(
+            root, info, null, objectTable
+        )
     }
 
     toJSON(){

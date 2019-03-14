@@ -7,6 +7,10 @@ export default class PDFBoolean extends PDFOr {
         super(config)
     }
 
+    found(pdfobj){
+        this.value = pdfobj.cmd === 'true' ? true : false
+    }
+
     in(){
         return [
             new PDFCmd('true'),
