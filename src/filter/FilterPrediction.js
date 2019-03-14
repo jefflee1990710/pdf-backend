@@ -2,7 +2,7 @@ import helper from '../helper'
 
 export default class FilterPrediction {
 
-    async decode(buffer, params){
+    decode(buffer, params){
         let rows = []
 
         let colors = params.Colors || 1

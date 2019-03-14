@@ -1,4 +1,4 @@
-export default class PDFPageTree {
+export default class PDFPages {
 
     constructor(){
         

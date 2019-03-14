@@ -42,7 +42,6 @@ export default class PDFXRefStream extends PDFIndirectObject{
 
     getFilterChain(){
         let filters = this.filters;
-        logger.debug(`Filter list for cross-reference stream is : ${filters.map(r => r.constructor.name).join()}`)
         let chain = new FilterChain(filters)
         return chain
     }

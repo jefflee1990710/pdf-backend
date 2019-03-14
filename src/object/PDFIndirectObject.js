@@ -15,8 +15,11 @@ export default class PDFIndirectObject extends PDFObject {
     }
 
     receiveElement(element, index){
-        console.log('Element received : ', element)
-        // Receive Element
+        console.log('Element received : ', element, "at", index)
+    }
+
+    receiveElements(elements){
+        this.elements = elements
     }
 
     pipe(stream){
@@ -52,7 +55,7 @@ export default class PDFIndirectObject extends PDFObject {
             if(endobjResult){
                 stream.cleanPosition(addr)
                 this.filled = true
-                this.elements = elements
+                this.receiveElements(elements)
                 return this.pos = {
                     start, length : (stream.position - start)
                 }

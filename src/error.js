@@ -21,3 +21,11 @@ export class RestorePositionError extends Error {
         this.name = "RestorePositionError"
     }
 }
+
+export class InvalidParameterError extends Error {
+    constructor(...args){
+        super(...args)
+        Error.captureStackTrace(this, RestorePositionError)
+        this.name = "InvalidParameterError"
+    }
+}

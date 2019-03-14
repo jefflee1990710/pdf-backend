@@ -14,105 +14,18 @@ import PDFCatalog from './PDFCatalog'
 export default class PDFDocument {
 
     constructor(path){
+        if(path){ this.load(path) }
+    }
+
+    load(path){
         let reader = new FileReader(path)
         this.stream = reader.toStream()
-    }
-
-    get catalog(){
-        let offset = this.xref.rootObjectOffset.offset
-        logger.debug(`Parsing object at offset ${offset}`)
-        this.stream.reset()
-        this.stream.moveTo(offset)
-
-        let obj = new PDFCatalog()
-        let result = obj.pipe(this.stream)
-        if(result){
-            return obj
-        }else{
-            return null
-        }
-    }
-
-
-    get isLinearization(){
-
-        return false
-    }
-
-    get startXRefOffset(){
-        let startXrefStr = 'startxref'
-
-        if(this.isLinearization){
-            // Do something if pdf is Linearization
-            return null
-        }else{
-            this.stream.reset()
-            let found = this.stream.findBackward(startXrefStr, -1)
-            if(found){
-                new PDFCmd(startXrefStr).pipe(this.stream)
-                new PDFSpace().pipe(this.stream)
-                let offset = new PDFReal()
-                let result = offset.pipe(this.stream)
-                if(result){
-                    logger.debug('PDF last xref offset found at file position ' + result.start + ' and length : ' + result.length)
-                    return offset.value
-                }else{
-                    throw new InvalidPDFFormatError(`Invalid PDF Format - Error when trying to parse expected xrefoffset in PDF file`)
-                }
-            }else{
-                throw new InvalidPDFFormatError('Invalid PDF Format - Keyword "startxref" not found in the PDF file.')
-            }
-        }
-    }
-
-    async getAllXRef(){
-        let offset = this.startXRefOffset
-        logger.debug("#getAllXRef - document startXRefOffet at " + offset)
-        let xrefList = []
-        while(true){
-            let xref = await parseXRefTableByOffset(this.stream, offset)
-            if(!xref) {xref = await parseXRefStreamByOffset(this.stream, offset)}
-
-            xrefList.push(xref)
-            if(xref.prev === null){
-                break
-            }else{
-                let newOffset = getXRefOffsetByOffset.apply(this, [this.stream, xref.prev.value])   
-                if(newOffset === null){ // xref.prev.value is a xref stream, dont have xrefoffset
-                    offset = xref.prev.value
-                }else{
-                    offset = newOffset
-                }
-            }
-        }
-        xrefList = xrefList.reverse()
-        return xrefList
-    }
-
-    async getMasterXRef(){
-        let xrefList = await this.getAllXRef()
-
-        let root = null
-        let info = null
-        let objectMap = {}
-        for(let i in xrefList){
-            let xref = xrefList[i]
-            if(xref.info) {info = xref.info}
-            if(xref.root) {root = xref.root}
-            for(let o in xref.objectTable){
-                let row = xref.objectTable[o]
-                objectMap[row.getObjectName()] = row
-            }
-        }
-
-        let objectTable = []
-        for(let i in Object.keys(objectMap)){
-            let objectName = Object.keys(objectMap)[i]
-            objectTable.push(objectMap[objectName])
-        }
-        return new PDFXRef(
-            root, info, null, objectTable
-        )
+        
+        // Parse document structure
+        this.isLinearization = isLinearization.apply(this)
+        this.allXRef = getAllXRef.apply(this)
+        this.xRef = getMasterXRef.apply(this)
+        this.catalog = getCatalog.apply(this)
     }
 
     toJSON(){
@@ -123,20 +36,116 @@ export default class PDFDocument {
     }
 }
 
+export function isLinearization(){
 
-export const getXRefOffsetByOffset = (stream, offset) => {
-    stream.reset()
-    stream.moveTo(offset)
+    return false
+}
 
-    let result = new PDFCmd('startxref').pipe(stream)
+export function getStartXRefOffset(){
+    let startXrefStr = 'startxref'
+
+    if((isLinearization())){
+        // Do something if pdf is Linearization
+        return null
+    }else{
+        this.stream.reset()
+        let found = this.stream.findBackward(startXrefStr, -1)
+        if(found){
+            new PDFCmd(startXrefStr).pipe(this.stream)
+            new PDFSpace().pipe(this.stream)
+            let offset = new PDFReal()
+            let result = offset.pipe(this.stream)
+            if(result){
+                return offset.value
+            }else{
+                throw new InvalidPDFFormatError(`Invalid PDF Format - Error when trying to parse expected xrefoffset in PDF file`)
+            }
+        }else{
+            throw new InvalidPDFFormatError('Invalid PDF Format - Keyword "startxref" not found in the PDF file.')
+        }
+    }
+}
+
+export function getMasterXRef(){
+    let xrefList = this.allXRef
+
+    let root = null
+    let info = null
+    let objectMap = {}
+    for(let i in xrefList){
+        let xref = xrefList[i]
+        if(xref.info) {info = xref.info}
+        if(xref.root) {root = xref.root}
+        for(let o in xref.objectTable){
+            let row = xref.objectTable[o]
+            objectMap[row.getObjectName()] = row
+        }
+    }
+
+    let objectTable = []
+    for(let i in Object.keys(objectMap)){
+        let objectName = Object.keys(objectMap)[i]
+        objectTable.push(objectMap[objectName])
+    }
+    return new PDFXRef(
+        root, info, null, objectTable
+    )
+}
+
+export function getAllXRef(){
+    let offset = getStartXRefOffset.apply(this)
+    let xrefList = []
+    while(true){
+        let xref = parseXRefTableByOffset.apply(this, [offset])
+        if(!xref) {xref = parseXRefStreamByOffset.apply(this, [offset])}
+
+        xrefList.push(xref)
+        if(xref.prev === null){
+            break
+        }else{
+            let newOffset = getXRefOffsetByOffset.apply(this, [xref.prev.value])   
+            if(newOffset === null){ // xref.prev.value is a xref stream, dont have xrefoffset
+                offset = xref.prev.value
+            }else{
+                offset = newOffset
+            }
+        }
+    }
+    xrefList = xrefList.reverse()
+    return xrefList
+}
+
+export function getCatalog(){
+    let offset = this.xRef.rootObjectOffset.offset
+    this.stream.reset()
+    this.stream.moveTo(offset)
+
+    let obj = new PDFCatalog()
+    let result = obj.pipe(this.stream)
+    if(result){
+        return obj
+    }else{
+        return null
+    }
+}
+
+export function getXRefOffsetByOffset(offset) {
+    if(offset === null || offset === undefined) {
+        throw new InvalidPDFFormatError(`Offset can't be null or undefined`)
+    }
+    
+    this.stream.reset()
+    this.stream.moveTo(offset)
+
+    let result = new PDFCmd('startxref').pipe(this.stream)
     if(!result){
         return null
     }
 
-    new PDFSpace().pipe(stream)
+    new PDFSpace().pipe(this.stream)
 
     let num = new PDFReal()
-    result = num.pipe(stream)
+    result = num.pipe(this.stream)
     if(result){
         return num.value
     }else{
@@ -147,22 +156,23 @@ export const getXRefOffsetByOffset = (stream, offset) => {
 /**
  * Get XRef from offset of the target is a XRefTable, 
  * if not, (may be it is a cross-reference stream), it will return null
- * @param {BufferStream} stream 
  * @param {number} offset 
  * @returns {PDFXRef}
  */
-export const parseXRefTableByOffset = async (stream, offset) => {
-    logger.debug(`Prasing xref table at offset ${offset}`)
-    stream.reset()
-    stream.moveTo(offset)
+export function parseXRefTableByOffset(offset) {
+    if(offset === null || offset === undefined) {
+        throw new InvalidPDFFormatError(`Offset can't be null or undefined`)
+    }
+
+    this.stream.reset()
+    this.stream.moveTo(offset)
 
     let xRefTable = new PDFXRefTable()
-    let result = xRefTable.pipe(stream)
+    let result = xRefTable.pipe(this.stream)
     if(result){
-        logger.debug('Xref table found!')
         // If it is a xref table, trailer come after
         let trailer = new PDFTrailer()
-        result = trailer.pipe(stream)  
+        result = trailer.pipe(this.stream)  
         let trailerDict = trailer.get('trailerDict') 
         
         let xref = new PDFXRef()
@@ -181,16 +191,18 @@ export const parseXRefTableByOffset = async (stream, offset) => {
 /**
  * Get XRef from offset of the target is a XRefStream,
  * if not, (may be it is a cross-reference table), it will return null.
- * @param {BufferStream} stream 
  * @param {number} offset 
  */
-export const parseXRefStreamByOffset = async (stream, offset) => {
-    logger.debug(`Prasing xref stream at offset ${offset}`)
-    stream.reset()
-    stream.moveTo(offset)
+export function parseXRefStreamByOffset(offset) {
+    if(offset === null || offset === undefined) {
+        throw new InvalidPDFFormatError(`Offset can't be null or undefined`)
+    }
+
+    this.stream.reset()
+    this.stream.moveTo(offset)
 
     let xRefStream = new PDFXRefStream()
-    let result = xRefStream.pipe(stream)
+    let result = xRefStream.pipe(this.stream)
     if(result){
         let {dict, buffer} = xRefStream
         let decodeParams = dict.get('DecodeParms')
@@ -206,7 +218,7 @@ export const parseXRefStreamByOffset = async (stream, offset) => {
         xref.info = dict.get('Info')
         
         let chain = xRefStream.getFilterChain()
-        let decodedStream = await chain.decode(buffer, decodeParams.toJSON())
+        let decodedStream = chain.decode(buffer, decodeParams.toJSON())
 
         /// Extract buffer to object-offset mapping
         W = W.elements.map(r => r.value)
@@ -252,19 +264,23 @@ export const parseXRefStreamByOffset = async (stream, offset) => {
     }
 }
 
-export const parseObjectStreamByOffset = async (stream, offset) => {
-    stream.reset()
-    stream.moveTo(offset)
+export function parseObjectStreamByOffset(offset){
+    if(offset === null || offset === undefined) {
+        throw new InvalidPDFFormatError(`Offset can't be null or undefined`)
+    }
+
+    this.stream.reset()
+    this.stream.moveTo(offset)
 
     let xRefStream = new PDFXRefStream()
-    let result = xRefStream.pipe(stream)
+    let result = xRefStream.pipe(this.stream)
     if(result){
         let {dict, buffer} = xRefStream
         let decodeParams = dict.get('DecodeParms')
         decodeParams = decodeParams ? decodeParams.toJSON() : {}
 
         let flate = new FilterInflate()
-        buffer = await flate.decode(buffer, decodeParams)
+        buffer = flate.decode(buffer, decodeParams)
         return xRefStream
     }else{
         return null

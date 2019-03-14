@@ -1,6 +1,6 @@
 export default class Filter{
 
-    async decode(){
+    decode(){
         throw new Error('Filter.deocde not implement!')
     }
 

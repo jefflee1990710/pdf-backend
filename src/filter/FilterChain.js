@@ -7,7 +7,7 @@ export default class FilterChain extends Filter{
         this.filters = filters
     }
 
-    async decode(buffer, params){
+    decode(buffer, params){
         params = params || {}
         let cachedBuffer = buffer
         for(let i in this.filters){
