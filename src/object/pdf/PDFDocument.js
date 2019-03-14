@@ -1,6 +1,5 @@
 import {FileReader} from '../../reader'
 import {InvalidPDFFormatError} from '../../error'
-import logger from '../../logger'
 import PDFXRefTable from './PDFXrefTable';
 import PDFReal from '../PDFReal';
 import PDFCmd from '../PDFCmd';
@@ -133,7 +132,7 @@ export function getXRefOffsetByOffset(offset) {
     if(offset === null || offset === undefined) {
         throw new InvalidPDFFormatError(`Offset can't be null or undefined`)
     }
-    
+
     this.stream.reset()
     this.stream.moveTo(offset)
 
@@ -259,29 +258,6 @@ export function parseXRefStreamByOffset(offset) {
         }
         return xref
 
-    }else{
-        return null
-    }
-}
-
-export function parseObjectStreamByOffset(offset){
-    if(offset === null || offset === undefined) {
-        throw new InvalidPDFFormatError(`Offset can't be null or undefined`)
-    }
-
-    this.stream.reset()
-    this.stream.moveTo(offset)
-
-    let xRefStream = new PDFXRefStream()
-    let result = xRefStream.pipe(this.stream)
-    if(result){
-        let {dict, buffer} = xRefStream
-        let decodeParams = dict.get('DecodeParms')
-        decodeParams = decodeParams ? decodeParams.toJSON() : {}
-
-        let flate = new FilterInflate()
-        buffer = flate.decode(buffer, decodeParams)
-        return xRefStream
     }else{
         return null
     }

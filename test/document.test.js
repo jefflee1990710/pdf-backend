@@ -79,18 +79,6 @@ describe('PDFDocument', () => {
         })
     })
 
-    describe('#parseObjectStreamByOffset', () => {
-        it('can parse object stream', async () => {
-            const {parseObjectStreamByOffset} = require('../src/object/pdf/PDFDocument')
-            let pdfDocument = new PDFDocument('./pdf-sample/xref-stream-sample-1.pdf')
-            let objectStream =  parseObjectStreamByOffset.apply(pdfDocument, [776])
-            expect(objectStream.dict).is.not.null
-            expect(objectStream.dict.get('Filter').value).is.eq('FlateDecode')
-            expect(objectStream.dict.get('Length').value).is.eq(773)
-            expect(objectStream.buffer.length).is.eq(773)
-        })
-    })
-
     describe('#getMasterXRef', async () => {
         const {getMasterXRef} = require('../src/object/pdf/PDFDocument')
         it('can get master xref table from a updated pdf', async () => {
