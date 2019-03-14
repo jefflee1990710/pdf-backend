@@ -94,11 +94,6 @@ PDFObjectReference.generationNumber
 ```
 PDFObjectReference.toDisplayName()
 ```
----
-
-## PDFOctal
-
-### Consume octal character in string
 
 ---
 ## PDFReal
