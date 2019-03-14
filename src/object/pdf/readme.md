@@ -2,15 +2,15 @@
 
 this is a API document for the object constructing the PDF's document structure.
 
-- [PDFCatalog](##PDFCatalog)
-- [PDFDocument](##PDFDocument)
-- [PDFCatalog](##PDFCatalog)
-- [PDFPage](##PDFPage)
-- [PDFPages](##PDFPages)
-- [PDFTrailer](##PDFTrailer)
-- [PDFXRef](##PDFTrailer)
-- [PDFXRefStream](##PDFXRefStream)
-- [PDFXRefTable](##PDFXRefTable)
+- [PDFCatalog](#PDFCatalog)
+- [PDFDocument](#PDFDocument)
+- [PDFCatalog](#PDFCatalog)
+- [PDFPage](#PDFPage)
+- [PDFPages](#PDFPages)
+- [PDFTrailer](#PDFTrailer)
+- [PDFXRef](#PDFTrailer)
+- [PDFXRefStream](#PDFXRefStream)
+- [PDFXRefTable](#PDFXRefTable)
 
 ---
 ## PDFCatalog
