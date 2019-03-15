@@ -2,7 +2,6 @@ import PDFIndirectObject from "../PDFIndirectObject";
 import FilterChain from '../../filter/FilterChain'
 
 import constant from '../../constant'
-import logger from '../../logger'
 
 export default class PDFXRefStream extends PDFIndirectObject{
 
@@ -22,7 +21,8 @@ export default class PDFXRefStream extends PDFIndirectObject{
     }
 
     get decodedBuffer(){
-        
+        let filters = this.filters()
+        let chain = new FilterChain()
     }
 
     get filters(){

@@ -34,8 +34,8 @@ export default class PDFAnd extends PDFObject {
         this.objectMap = {}
         for(let i in ins){
             let obj = ins[i]
-            if(obj.name){
-                this.content[obj.name] = obj
+            if(obj.config.name){
+                this.content[obj.config.name] = obj
             }
         }
         stream.cleanPosition(addr)

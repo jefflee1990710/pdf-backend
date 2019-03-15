@@ -7,7 +7,6 @@ import PDFSpace from '../PDFSpace';
 import PDFTrailer from './PDFTrailer'
 import PDFXRefStream from './PDFXRefStream';
 import PDFXRef from './PDFXRef';
-import FilterInflate from '../../filter/FilterInflate';
 import PDFCatalog from './PDFCatalog'
 
 export default class PDFDocument {
@@ -32,6 +31,19 @@ export default class PDFDocument {
             startXRef : this.startXRef.toJSON(),
             startTrailer : this.startTrailer.toJSON()
         }
+    }
+}
+
+export function getPDFObjectByOffset(offset, objectClazz){
+    this.stream.reset()
+    this.stream.moveTo(offset)
+
+    let obj = new objectClazz(this.config)
+    let result = obj.pipe(this.stream)
+    if(result){
+        return obj
+    }else{
+        return null;
     }
 }
 
@@ -119,7 +131,9 @@ export function getCatalog(){
     this.stream.reset()
     this.stream.moveTo(offset)
 
-    let obj = new PDFCatalog()
+    let obj = new PDFCatalog({
+        document : this
+    })
     let result = obj.pipe(this.stream)
     if(result){
         return obj
