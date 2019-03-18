@@ -7,52 +7,52 @@ import PDFSpace from "./PDFSpace";
 import PDFLiteralString from "./string/PDFLiteralString";
 import PDFHexadecimalString from "./string/PDFHexadecimalString";
 import PDFNull from "./PDFNull";
-import PDFBoolean from "./PDFBoolean"
-import PDFName from "./PDFName"
-import PDFDict from './PDFDict'
-import PDFObjectReference from './PDFObjectReference'
+import PDFBoolean from "./PDFBoolean";
+import PDFName from "./PDFName";
+import PDFDict from './PDFDict';
+import PDFObjectReference from './PDFObjectReference';
 
 export default class PDFArray extends PDFObject {
 
     constructor(config){
-        super(config)
+        super(config);
     }
 
     pipe(stream){
-        let addr = stream.savePosition()
-        let start = stream.position
+        let addr = stream.savePosition();
+        let start = stream.position;
 
-        let arrayStart = new PDFCmd('[')
+        let arrayStart = new PDFCmd('[');
         if(!arrayStart.pipe(stream)){
-            stream.restorePosition(addr)
+            stream.restorePosition(addr);
             return null;
         }
 
-        new PDFSpace(this.config).pipe(stream)
+        new PDFSpace(this.config).pipe(stream);
 
-        let elemList = []
+        let elemList = [];
         while(true){
-            new PDFSpace(this.config).pipe(stream)
+            new PDFSpace(this.config).pipe(stream);
 
-            let arrayEnd = new PDFCmd(']')
+            let arrayEnd = new PDFCmd(']');
             if(arrayEnd.pipe(stream)){
-                stream.cleanPosition(addr)
-                this.filled = true
-                this.elements = elemList
+                stream.cleanPosition(addr);
+                this.filled = true;
+                this.elements = elemList;
                 return this.pos = {
                     start, length : (stream.position - start)
-                }
+                };
             }
 
-            new PDFSpace(this.config).pipe(stream)
+            new PDFSpace(this.config).pipe(stream);
 
-            let element = new PDFArrayElement(this.config)
+            let element = new PDFArrayElement(this.config);
             if(element.pipe(stream)){
-                elemList.push(element.hit)
+                elemList.push(element.hit);
             }else{
-                let ch = stream.getByte() // If nothing found, next one
+                let ch = stream.getByte(); // If nothing found, next one
                 if(ch === null){
-                    stream.restorePosition(addr)
+                    stream.restorePosition(addr);
                     return null;
                 }
             }
@@ -60,7 +60,7 @@ export default class PDFArray extends PDFObject {
     }
 
     toJSON(){
-        return this.elements.map(r => r.toJSON())
+        return this.elements.map(r => r.toJSON());
     }
 
 }
@@ -68,7 +68,7 @@ export default class PDFArray extends PDFObject {
 class PDFArrayElement extends PDFOr {
 
     constructor(config){
-        super(config)
+        super(config);
     }
 
     in(){
@@ -82,6 +82,6 @@ class PDFArrayElement extends PDFOr {
             new PDFBoolean(this.config),
             new PDFNull(this.config),
             new PDFReal(this.config),
-        ]
+        ];
     }
 }

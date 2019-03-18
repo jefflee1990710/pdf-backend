@@ -1,35 +1,35 @@
-import PDFObject from '../PDFObject'
+import PDFObject from '../PDFObject';
 
 export default class PDFOr extends PDFObject {
 
     constructor(config){
-        super(config)
+        super(config);
     }
 
     in(){
-        return []
+        return [];
     }
 
     found(pdfobj){
-        this.hit = pdfobj
+        this.hit = pdfobj;
     }
 
     pipe(stream){
-        let pdfEmptyObjects = this.in()
+        let pdfEmptyObjects = this.in();
         for(let i in pdfEmptyObjects){
-            let obj = pdfEmptyObjects[i]
-            let result = obj.pipe(stream)
+            let obj = pdfEmptyObjects[i];
+            let result = obj.pipe(stream);
             if(result){
-                this.filled = true
-                this.found(obj)
+                this.filled = true;
+                this.found(obj);
                 return result;
             }
         }
-        return null
+        return null;
     }
 
     toJSON(){
-        return this.hit.toJSON()
+        return this.hit.toJSON();
     }
 
 }

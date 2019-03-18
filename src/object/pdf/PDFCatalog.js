@@ -14,7 +14,6 @@ export default class PDFCatalog extends PDFIndirectObject{
         if(elem.constructor.name !== "PDFDict"){
             throw new InvalidPDFFormatError(`Catalog object should be PDFDict, but ${elem.constructor.name} found`)
         }
-        this.elem = elem
         if(this.elem.get('Pages') === null){
             throw new InvalidPDFFormatError('"Pages" field in PDFCatalog is required')
         }

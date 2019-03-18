@@ -1,6 +1,6 @@
-import config from 'config'
-import uuidv4 from 'uuid/v4'
-import {RestorePositionError} from './error'
+import config from 'config';
+import uuidv4 from 'uuid/v4';
+import {RestorePositionError} from './error';
 
 
 /**
@@ -15,40 +15,40 @@ export default class BufferStream {
      * @param {number} length 
      */
     constructor(reader, startPosition = 0, length = -1){
-        this.reader = reader
-        this.position = startPosition
+        this.reader = reader;
+        this.position = startPosition;
         if(length === -1){
-            this.endPosition = this.reader.length - 1
+            this.endPosition = this.reader.length - 1;
         }else{
-            this.endPosition = startPosition + length
+            this.endPosition = startPosition + length;
         }
-        this.startPosition = startPosition
-        this.lastPosition = this.position
-        this.savedPosition = {}
+        this.startPosition = startPosition;
+        this.lastPosition = this.position;
+        this.savedPosition = {};
     }
 
     _getPositionAndAdd(num){
-        this.lastPosition = this.position
-        this.position = this.position + num
+        this.lastPosition = this.position;
+        this.position = this.position + num;
         return this.lastPosition;
     }
 
     getByte(){
         if(!this.hasNext()){
-            this._getPositionAndAdd(1)
-            return null
+            this._getPositionAndAdd(1);
+            return null;
         }
-        this.lastPosition = this.position
-        return this.reader.getByte(this._getPositionAndAdd(1))
+        this.lastPosition = this.position;
+        return this.reader.getByte(this._getPositionAndAdd(1));
     }
 
     getBytes(length){
         if(!this.hasNext()){
-            this._getPositionAndAdd(length)
-            return null
+            this._getPositionAndAdd(length);
+            return null;
         }
-        let r = this.reader.getBytes(this._getPositionAndAdd(length), length)
-        return r
+        let r = this.reader.getBytes(this._getPositionAndAdd(length), length);
+        return r;
     }
 
     /**
@@ -56,31 +56,31 @@ export default class BufferStream {
      */
     peekByte(){
         if(!this.hasNext()){
-            return null
+            return null;
         }
-        return this.reader.getByte(this.position)
+        return this.reader.getByte(this.position);
     }
 
     peekBytes(length){
         if(!this.hasNext()){
-            return null
+            return null;
         }
-        return this.reader.getBytes(this.position, length)
+        return this.reader.getBytes(this.position, length);
     }
 
     /**
      * Check if the pointer already at the end of the stream
      */
     hasNext(){
-        return this.position <= this.endPosition
+        return this.position <= this.endPosition;
     }
     
     /**
      * Reset the position to starting position
      */
     reset(){
-        this.lastPosition = this.position
-        this.position = this.startPosition
+        this.lastPosition = this.position;
+        this.position = this.startPosition;
     }
 
     /**
@@ -89,26 +89,26 @@ export default class BufferStream {
      * @param {number} limit 
      */
     find(needle, limit){
-        this.lastPosition = this.position
-        let oldPos = this.position
+        this.lastPosition = this.position;
+        let oldPos = this.position;
         let startPos = this.position + 1;
-        let endPos = startPos + limit - 1
+        let endPos = startPos + limit - 1;
         if(endPos > this.endPosition){
-            endPos = this.endPosition
+            endPos = this.endPosition;
         }
         if(limit === -1){
-            endPos = this.endPosition
+            endPos = this.endPosition;
         }
         while(true){
             if(this.position >= endPos){
-                this.position = oldPos
-                return false
+                this.position = oldPos;
+                return false;
             }
-            let peeked = this.peekBytes(needle.length)
+            let peeked = this.peekBytes(needle.length);
             if(peeked.toString(config.get('pdf.encoding')) === needle){
-                return true
+                return true;
             }
-            this.position += 1
+            this.position += 1;
         }
     }
 
@@ -118,30 +118,30 @@ export default class BufferStream {
      * @param {number} limit 
      */
     findBackward(needle, limit){
-        this.lastPosition = this.position
-        let oldPos = this.position
+        this.lastPosition = this.position;
+        let oldPos = this.position;
         // Set the pos to the end first
-        this.position = this.endPosition
-        let endPos = Math.max(0, this.endPosition - (limit - 1))
+        this.position = this.endPosition;
+        let endPos = Math.max(0, this.endPosition - (limit - 1));
         // Search backward
         if(limit === -1){
-            endPos = 0
+            endPos = 0;
         }
         while(true){
             try{
                 if(this.position <= endPos){
-                    this.position = oldPos
-                    return false
+                    this.position = oldPos;
+                    return false;
                 }
-                let peeked = this.peekBytes(needle.length)
+                let peeked = this.peekBytes(needle.length);
                 if(peeked.toString(config.get('pdf.encoding')) === needle){
                     // this.position ++
-                    return true
+                    return true;
                 }
-                this.position -= 1
+                this.position -= 1;
             }catch(e){
                 // Do nothing, normal behaviour for just start the search on backward.
-                this.position -= 1
+                this.position -= 1;
             }
         }
     }
@@ -150,37 +150,37 @@ export default class BufferStream {
      * Go back position one step before
      */
     rewindPosition(){
-        this.position = this.lastPosition
+        this.position = this.lastPosition;
     }
 
     savePosition(){
-        let addr = uuidv4()
-        this.savedPosition[addr] = this.position
-        return addr
+        let addr = uuidv4();
+        this.savedPosition[addr] = this.position;
+        return addr;
     }
 
     restorePosition(addr){
-        this.lastPosition = this.position
+        this.lastPosition = this.position;
         if(!this.savedPosition[addr] && this.savedPosition[addr] != 0){
-            throw new RestorePositionError("Position not found in address : " + addr)
+            throw new RestorePositionError("Position not found in address : " + addr);
         }
-        this.position = this.savedPosition[addr]
-        this.savedPosition[addr] = null
-        this.cleanPosition(addr)
+        this.position = this.savedPosition[addr];
+        this.savedPosition[addr] = null;
+        this.cleanPosition(addr);
     }
 
     cleanSavedPosition(addr){
-        this.savedPosition[addr] = null
-        delete this.savedPosition[addr]
+        this.savedPosition[addr] = null;
+        delete this.savedPosition[addr];
     }
 
     cleanPosition(addr){
-        this.savedPosition[addr] = null
-        delete this.savedPosition[addr]
+        this.savedPosition[addr] = null;
+        delete this.savedPosition[addr];
     }
 
     moveTo(offset){
-        this.lastPosition = this.position
-        this.position = offset
+        this.lastPosition = this.position;
+        this.position = offset;
     }
 }

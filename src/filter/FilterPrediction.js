@@ -1,55 +1,55 @@
-import helper from '../helper'
+import helper from '../helper';
 
 export default class FilterPrediction {
 
     decode(buffer, params){
-        let rows = []
+        let rows = [];
 
-        let colors = params.Colors || 1
-        let bitsPerComponent = params.BitsPerComponent || 8
-        let columns = params.Columns || 1
-        var predictor = params.Predictor || 1
+        let colors = params.Colors || 1;
+        let bitsPerComponent = params.BitsPerComponent || 8;
+        let columns = params.Columns || 1;
+        var predictor = params.Predictor || 1;
 
         if(predictor === 1){
-            return buffer.slice()
+            return buffer.slice();
         }else{
-            let rowlength = helper.calculateRowSize(colors, bitsPerComponent, columns)
-            let actline = Buffer.alloc(rowlength)
-            let lastline = Buffer.alloc(rowlength)
+            let rowlength = helper.calculateRowSize(colors, bitsPerComponent, columns);
+            let actline = Buffer.alloc(rowlength);
+            let lastline = Buffer.alloc(rowlength);
     
-            let endPos = buffer.length - 1
-            let pos = 0
-            let linepredictor = predictor
+            let endPos = buffer.length - 1;
+            let pos = 0;
+            let linepredictor = predictor;
             while(pos <= endPos){
                 if(predictor >= 10){
-                    linepredictor = buffer[pos++]
+                    linepredictor = buffer[pos++];
                     if(linepredictor == -1){
-                        throw new Error('Error line predictor when decoding predicted stream content.')
+                        throw new Error('Error line predictor when decoding predicted stream content.');
                     }
-                    linepredictor += 10
+                    linepredictor += 10;
                 }
                 for(let b = 0 ; b < rowlength; b++){
-                    actline[b] = buffer[pos++]
+                    actline[b] = buffer[pos++];
                 }
-                let decodedline = decodePredictorRow(linepredictor, colors, bitsPerComponent, columns, actline, lastline)
-                lastline = decodedline.slice()
+                let decodedline = decodePredictorRow(linepredictor, colors, bitsPerComponent, columns, actline, lastline);
+                lastline = decodedline.slice();
                 for(let b = 0 ; b < decodedline.length; b++){
-                    rows.push(decodedline[b])
+                    rows.push(decodedline[b]);
                 }
             }
         }
-        return Buffer.from(rows)
+        return Buffer.from(rows);
     }
 
 }
 
 function decodePredictorRow(predictor, colors, bitsPerComponent, columns, actline, lastline){
 
-    let bitsPerPixel = colors * bitsPerComponent
-    let bytesPerPixel = (bitsPerPixel + 7)/8
-    let rowlength = actline.length
+    let bitsPerPixel = colors * bitsPerComponent;
+    let bytesPerPixel = (bitsPerPixel + 7)/8;
+    let rowlength = actline.length;
     let elements = columns * colors;
-    let rb = Buffer.alloc(rowlength)
+    let rb = Buffer.alloc(rowlength);
 
     switch(predictor){
         case 2:
@@ -111,24 +111,24 @@ function decodePredictorRow(predictor, colors, bitsPerComponent, columns, actlin
             break;
         case 11: //SUB
             for(let b = bytesPerPixel ; b < rowlength; b++){
-                let sub = actline[b]
-                let left = actline[b - bytesPerPixel]
-                rb[b] = sub + left
+                let sub = actline[b];
+                let left = actline[b - bytesPerPixel];
+                rb[b] = sub + left;
             }
             break;
         case 12: //UP
             for(let b = 0 ; b < rowlength; b++){
-                let up = actline[b] & 0xff
-                let prior = lastline[b] & 0xff
-                rb[b] = (up + prior) & 0xff
+                let up = actline[b] & 0xff;
+                let prior = lastline[b] & 0xff;
+                rb[b] = (up + prior) & 0xff;
             }
             break;
         case 13: // AVG
             for(let b = 0 ; b < rowlength; b++){
-                let avg = actline[b] & 0xff
-                let left = b - bytesPerPixel >= 0 ? actline[b - bytesPerPixel] & 0xff : 0
-                let up = lastline[b] & 0xff
-                rb[b] = (avg + (left + up)/2) & 0xff
+                let avg = actline[b] & 0xff;
+                let left = b - bytesPerPixel >= 0 ? actline[b - bytesPerPixel] & 0xff : 0;
+                let up = lastline[b] & 0xff;
+                rb[b] = (avg + (left + up)/2) & 0xff;
             }
             break;
         case 14: // PAETH
@@ -155,5 +155,5 @@ function decodePredictorRow(predictor, colors, bitsPerComponent, columns, actlin
             break;
     }
 
-    return rb
+    return rb;
 }

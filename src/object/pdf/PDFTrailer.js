@@ -6,7 +6,7 @@ import PDFSpace from '../PDFSpace';
 export default class PDFTrailer extends PDFAnd{
 
     constructor(config){
-        super(config)
+        super(config);
     }
 
     in(){
@@ -14,6 +14,6 @@ export default class PDFTrailer extends PDFAnd{
             new PDFCmd('trailer'),
             new PDFSpace(),
             new PDFDict({name : 'trailerDict'})
-        ]
+        ];
     }
 }
